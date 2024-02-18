@@ -8,6 +8,7 @@ use hyper::service::service_fn;
 use hyper::{Request, Response};
 use hyper_util::rt::TokioIo;
 use tokio::net::TcpListener;
+use tracing::{error, info};
 
 async fn hello(_: Request<hyper::body::Incoming>) -> Result<Response<Full<Bytes>>, Infallible> {
     let hello_bytes = Bytes::from("Hello, World!\n");
@@ -18,12 +19,15 @@ const PORT: u16 = 3000;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // Setup and print tracing output
+    tracing_subscriber::fmt::init();
+
     let addr:SocketAddr = format!("0.0.0.0:{}", PORT).parse()?;
 
     // We create a TcpListener and bind it to 127.0.0.1:3000
     let listener = TcpListener::bind(addr).await?;
 
-    println!("Now listening at http://localhost:{}", PORT);
+    info!("Now listening at http://localhost:{}", PORT);
     // We start a loop to continuously accept incoming connections
     loop {
         let (stream, _) = listener.accept().await?;
@@ -40,7 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 .serve_connection(io, service_fn(hello))
                 .await
             {
-                println!("Error serving connection: {}", err);
+                error!("Error serving connection: {}", err);
             }
         });
     }
