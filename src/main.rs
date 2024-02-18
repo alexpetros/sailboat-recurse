@@ -1,10 +1,10 @@
 use std::net::SocketAddr;
 
 use hyper::server::conn::http1;
-use tracing::{error, info};
-use tokio::net::TcpListener;
-use hyper_util::rt::TokioIo;
 use hyper::service::service_fn;
+use hyper_util::rt::TokioIo;
+use tokio::net::TcpListener;
+use tracing::{error, info, level_filters::LevelFilter};
 
 use router::router;
 
@@ -14,10 +14,12 @@ const PORT: u16 = 3000;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    // Setup and print tracing output
-    tracing_subscriber::fmt::init();
+    // Setup logging (leaving at DEBUG level for now)
+    tracing_subscriber::fmt()
+        .with_max_level(LevelFilter::DEBUG)
+        .init();
 
-    let addr:SocketAddr = format!("0.0.0.0:{}", PORT).parse()?;
+    let addr: SocketAddr = format!("127.0.0.1:{}", PORT).parse()?;
     let listener = TcpListener::bind(addr).await?;
     info!("Now listening at http://localhost:{}", PORT);
 
@@ -31,7 +33,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         tokio::task::spawn(async move {
             // Finally, we bind the incoming connection to our `hello` service
             if let Err(err) = http1::Builder::new()
-                // `service_fn` converts our function in a `Service`
                 .serve_connection(io, service_fn(router))
                 .await
             {
