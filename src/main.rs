@@ -14,13 +14,16 @@ async fn hello(_: Request<hyper::body::Incoming>) -> Result<Response<Full<Bytes>
     Ok(Response::new(Full::new(hello_bytes)))
 }
 
+const PORT: u16 = 3000;
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([127, 0, 0, 1], PORT));
 
     // We create a TcpListener and bind it to 127.0.0.1:3000
     let listener = TcpListener::bind(addr).await?;
 
+    println!("Now listening at http://localhost:{:?}", PORT);
     // We start a loop to continuously accept incoming connections
     loop {
         let (stream, _) = listener.accept().await?;
