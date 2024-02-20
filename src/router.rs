@@ -7,9 +7,9 @@ use hyper::{Method, StatusCode};
 use hyper::{Request, Response};
 use tracing::debug;
 
-use crate::routes::echo::echo;
-use crate::routes::echo::echo_upper;
-use crate::routes::echo::echo_reversed;
+use crate::router::echo::echo;
+use crate::router::echo::echo_upper;
+use crate::router::echo::echo_reversed;
 use crate::request_utils::full;
 use crate::request_utils::empty;
 
