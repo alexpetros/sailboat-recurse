@@ -9,4 +9,4 @@ $(DEBUG_BUILD):
 
 .PHONY: test
 test:
-	@./test/run-tests.sh
+	@./test/integration/run-integration-tests.sh
