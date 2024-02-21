@@ -21,6 +21,7 @@ APP_PID=$!
 
 # Wait for a second so the app can start, and then run the integration tests
 sleep 1
+cd test/integration
 node --test
 
 # At the end of this script, the cleanup function will run
