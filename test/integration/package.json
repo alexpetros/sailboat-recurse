@@ -1,0 +1,5 @@
+{
+  "name": "sailboat-integ-tests",
+  "engines": { "node": "20.x" },
+  "type": "module"
+}
