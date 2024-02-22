@@ -20,7 +20,7 @@ trap cleanup EXIT
 APP_PID=$!
 
 # Wait until the server responds to a ping
-until [[ ! $(nc -z localhost 3000) ]]; do
+until nc -z localhost 3000; do
   sleep 0.05
 done
 
