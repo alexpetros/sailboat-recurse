@@ -19,9 +19,12 @@ trap cleanup EXIT
 "$APP_PATH" &
 APP_PID=$!
 
-# Wait for a second so the app can start, and then run the integration tests
-sleep 1
-cd test/integration
-node --test
+# Wait until the server responds to a ping
+until [[ ! $(nc -z localhost 3000) ]]; do
+  sleep 0.05
+done
+
+# Run the integration tests
+node --test ./test/integration
 
 # At the end of this script, the cleanup function will run

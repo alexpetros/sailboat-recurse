@@ -2,7 +2,6 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { SAILBOAT_URL } from './setup.js'
-console.log(SAILBOAT_URL)
 
 describe('echo tests', async () => {
 
