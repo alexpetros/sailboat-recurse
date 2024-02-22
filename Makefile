@@ -1,7 +1,7 @@
 $DEBUG_BUILD = ./target/debug/sailboat
 
 all: $(DEBUG_BUILD)
-	cargo run
+	cargo watch -x run
 
 .PHONY: $(DEBUG_BUILD)
 $(DEBUG_BUILD):
@@ -10,3 +10,7 @@ $(DEBUG_BUILD):
 .PHONY: test
 test:
 	@./test/integration/run-integration-tests.sh
+
+.PHONY: test
+watch-test:
+	cargo watch -s ./test/integration/run-integration-tests.sh

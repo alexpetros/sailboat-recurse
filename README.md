@@ -2,7 +2,10 @@
 
 Run your ActivityPub presence from your own website.
 
-## Project Goals
+## Installation
+The rust toolchain and `cargo watch` are required for the development environment. Install `cargo watch` with `cargo install cargo-watch`. NodeJS >= 20.x is required to run the test suite.
+
+## Goals
 
 ### Main Ideas
 * Create a web server with both a authenticated "owner" view and a public view
