@@ -19,9 +19,12 @@ const POST: &Method = &Method::POST;
 pub async fn router(
     req: Request<hyper::body::Incoming>,
 ) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
-    debug!("Serving request");
-    match (req.method(), req.uri().path()) {
-        (GET, "/") => hello(req),
+    let method = req.method();
+    let path = req.uri().path();
+
+    debug!("Received {} request at {}", method, path);
+    match (method, path) {
+        (GET, "/healthcheck") => healthcheck(req),
         (POST, "/echo") => echo(req),
         (POST, "/echo/uppercase") => echo_upper(req),
         (POST, "/echo/reversed") => echo_reversed(req).await,
@@ -35,7 +38,7 @@ pub async fn router(
     }
 }
 
-fn hello(_: Request<Incoming>) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
-    Ok(Response::new(full("Hello, World!\n")))
+fn healthcheck(_: Request<Incoming>) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+    Ok(Response::new(full("OK")))
 }
 

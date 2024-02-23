@@ -5,10 +5,10 @@ import { SAILBOAT_URL } from './setup.js'
 
 describe('echo tests', async () => {
 
-  it('says hello world', async () => {
-    const res = await fetch(SAILBOAT_URL)
+  it('responds to healthcheck with ok', async () => {
+    const res = await fetch(`${SAILBOAT_URL}/healthcheck`)
     const body = await res.text()
-    assert.equal(body, 'Hello, World!\n')
+    assert.equal(body, 'OK')
   })
 
   it('echoes a post body', async () => {

@@ -4,13 +4,11 @@ use http_body_util::{combinators::BoxBody, BodyExt};
 use hyper::body::Incoming;
 use hyper::body::Bytes;
 use hyper::{Request, Response};
-use tracing::debug;
 
 use crate::request_utils::full;
 
 pub fn echo(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
     let res = Response::new(req.into_body().boxed());
-    debug!("{:?}", &res);
     Ok(res)
 }
 
