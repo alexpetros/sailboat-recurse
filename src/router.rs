@@ -1,11 +1,13 @@
 mod index;
 mod echo;
 
+use std::sync::Arc;
 use hyper::body::Incoming;
 use http_body_util::combinators::BoxBody;
 use hyper::body::Bytes;
 use hyper::{Method, StatusCode};
 use hyper::{Request, Response};
+use minijinja::Environment;
 use tracing::debug;
 
 use crate::router::echo::echo;
@@ -19,6 +21,7 @@ const POST: &Method = &Method::POST;
 
 pub async fn router(
     req: Request<hyper::body::Incoming>,
+    env: Arc<Environment<'_>>
 ) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
     let method = req.method();
     let path = req.uri().path();
@@ -26,7 +29,7 @@ pub async fn router(
     debug!("Received {} request at {}", method, path);
     match (method, path) {
         (GET, "/healthcheck") => healthcheck(req),
-        (GET, "/") => index::get(req),
+        (GET, "/") => index::get(req, env),
         (POST, "/echo") => echo(req),
         (POST, "/echo/uppercase") => echo_upper(req),
         (POST, "/echo/reversed") => echo_reversed(req).await,

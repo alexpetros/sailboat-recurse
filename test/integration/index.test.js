@@ -8,7 +8,7 @@ describe('echo tests', async () => {
   it('shows "Hello World!"', async () => {
     const res = await fetch(`${SAILBOAT_URL}`)
     const body = await res.text()
-    assert.equal(body, 'Hello World!')
+    assert.equal(body, '<!DOCTYPE html>\n<title>Hello World</title>\n<h1>Hello World!</h1>')
   })
 
 })
