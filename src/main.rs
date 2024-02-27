@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use hyper::body;
 use hyper::Request;
+use minijinja::path_loader;
 use crate::router::router;
 use std::net::SocketAddr;
 
@@ -25,7 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     // Setup template environment
     let mut env = Environment::new();
-    env.add_template("hello", "<!DOCTYPE html>\n<title>Hello World</title>\n<h1>Hello {{ name }}!</h1>").unwrap();
+    env.set_loader(path_loader("src/templates"));
     let env = Arc::new(env);
 
     let addr: SocketAddr = format!("127.0.0.1:{}", PORT).parse()?;

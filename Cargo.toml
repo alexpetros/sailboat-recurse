@@ -10,4 +10,4 @@ http-body-util = "0.1"
 hyper-util = { version = "0.1", features = ["full"] }
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
-minijinja = { version = "1.0.12", features = ["multi_template"] }
+minijinja = { version = "1.0.12", features = ["multi_template", "loader"] }
