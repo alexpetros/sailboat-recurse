@@ -1,3 +1,4 @@
+mod index;
 mod echo;
 
 use hyper::body::Incoming;
@@ -25,6 +26,7 @@ pub async fn router(
     debug!("Received {} request at {}", method, path);
     match (method, path) {
         (GET, "/healthcheck") => healthcheck(req),
+        (GET, "/") => index::get(req),
         (POST, "/echo") => echo(req),
         (POST, "/echo/uppercase") => echo_upper(req),
         (POST, "/echo/reversed") => echo_reversed(req).await,
