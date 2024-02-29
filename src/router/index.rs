@@ -10,7 +10,11 @@ use minijinja::Environment;
 pub fn get(_req: Request<Incoming>, env: Arc<Environment<'_>>) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
 
     let tmpl = env.get_template("index.html").unwrap();
-    let body = tmpl.render(context!(name => "World")).unwrap().into_bytes();
+    let context = context! {
+        name => "Alex",
+        bio => "Rigging my sailboat"
+    };
+    let body = tmpl.render(context).unwrap().into_bytes();
 
     Ok(Response::new(full(body)))
 }
