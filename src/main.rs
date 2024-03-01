@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use hyper::body;
 use hyper::Request;
@@ -14,8 +15,15 @@ use minijinja::{Environment};
 
 mod router;
 mod request_utils;
+mod static_files;
 
 const PORT: u16 = 3000;
+
+#[derive(Clone)]
+pub struct Context<'a> {
+    env: Arc<Environment<'a>>,
+    statics: Arc<HashMap<String, Vec<u8>>>
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -29,6 +37,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     env.set_loader(path_loader("src/templates"));
     let env = Arc::new(env);
 
+    // Load static files
+    let statics = static_files::load_static();
+    let statics = Arc::new(statics);
+
+    let ctx = Arc::new(Context { env, statics });
+
     let addr: SocketAddr = format!("127.0.0.1:{}", PORT).parse()?;
     let listener = TcpListener::bind(addr).await?;
     info!("Now listening at http://localhost:{}", PORT);
@@ -39,9 +53,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // Wrapper to use Hyper traits with Tokio streams
         let io = TokioIo::new(stream);
 
-        let shared_env = env.clone(); // Why is this necessary?
+        let shared_ctx = ctx.clone(); // Why is this necessary?
         let service = service_fn(move |req: Request<body::Incoming>| {
-            router(req, shared_env.clone())
+            router(req, shared_ctx.clone())
         });
 
         // Spawn a tokio task to serve multiple connections concurrently
