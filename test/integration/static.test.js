@@ -2,14 +2,14 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { SAILBOAT_URL } from './setup.js'
 
-describe('Hello world test', async () => {
+describe('Static files test', async () => {
 
   it('shows "Hello World!"', async () => {
-    const res = await fetch(`${SAILBOAT_URL}`)
+    const res = await fetch(`${SAILBOAT_URL}/static/common.css`)
     const body = await res.text()
-    assert(body.includes("<h1>Alex's Sailboat!</h1>"))
-    assert(body.includes("<h2>Feeds</h2>"))
+    assert.equal(body, 'body {\n  max-width: 800px;\n}\n')
   })
 
 })
+
 
