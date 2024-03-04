@@ -6,7 +6,6 @@ use hyper::body::Bytes;
 use hyper::{Request, Response};
 
 use crate::request_utils;
-use crate::request_utils::full;
 
 pub fn echo(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
     let res = Response::new(req.into_body().boxed());
@@ -31,7 +30,7 @@ pub async fn echo_reversed(req: Request<Incoming>) -> Result<Response<BoxBody<By
     // Bodies should only be so large
     let upper = req.body().size_hint().upper().unwrap_or(u64::MAX);
     if upper > 1024 * 64 {
-        let mut res = Response::new(full("Body too large"));
+        let mut res = request_utils::send("Body too large");
         *res.status_mut() = hyper::StatusCode::PAYLOAD_TOO_LARGE;
         return Ok(res)
     }
