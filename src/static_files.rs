@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 pub fn load_static() -> HashMap<String, Vec<u8>> {
-    let mut scores = HashMap::new();
+    let mut static_files = HashMap::new();
 
-    scores.insert(String::from("common.css"), include_bytes!("./static/common.css").to_vec());
-    scores.insert(String::from("test.js"), include_bytes!("./static/test.js").to_vec());
-    scores
+    static_files.insert(String::from("common.css"), include_bytes!("./static/common.css").to_vec());
+    static_files.insert(String::from("hello.js"), include_bytes!("./static/hello.js").to_vec());
+    static_files
 }
 

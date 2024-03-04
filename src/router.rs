@@ -28,10 +28,14 @@ pub async fn router(
     let path = req.uri().path();
 
     debug!("Received {} request at {}", method, path);
+    // Serve static files separately
+    if path.starts_with("/static") {
+        return serve_static::get(req, ctx);
+    }
+
     match (method, path) {
         (GET, "/healthcheck") => healthcheck(req),
         (GET, "/") => index::get(req, ctx),
-        (GET, "/static/common.css") => serve_static::get(req, ctx),
         (POST, "/echo") => echo(req),
         (POST, "/echo/uppercase") => echo_upper(req),
         (POST, "/echo/reversed") => echo_reversed(req).await,
