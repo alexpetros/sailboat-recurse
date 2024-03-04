@@ -1,3 +1,5 @@
+use hyper::StatusCode;
+use hyper::Response;
 use http_body_util::Empty;
 use http_body_util::Full;
 
@@ -12,5 +14,15 @@ pub fn empty() -> BoxBody<Bytes, hyper::Error> {
 
 pub fn full<T: Into<Bytes>>(chunk: T) -> BoxBody<Bytes, hyper::Error> {
     Full::new(chunk.into()).map_err(|never| match never {}).boxed()
+}
+
+pub fn send<T: Into<Bytes>>(body: T) -> Response<BoxBody<hyper::body::Bytes, hyper::Error>> {
+    Response::new(full(body))
+}
+
+pub fn not_found () -> Response<BoxBody<hyper::body::Bytes, hyper::Error>> {
+    let mut not_found = Response::new(empty());
+    *not_found.status_mut() = StatusCode::NOT_FOUND;
+    not_found
 }
 

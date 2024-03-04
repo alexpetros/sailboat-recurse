@@ -5,6 +5,7 @@ use hyper::body::Incoming;
 use hyper::body::Bytes;
 use hyper::{Request, Response};
 
+use crate::request_utils;
 use crate::request_utils::full;
 
 pub fn echo(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
@@ -43,5 +44,5 @@ pub async fn echo_reversed(req: Request<Incoming>) -> Result<Response<BoxBody<By
         .cloned()
         .collect::<Vec<u8>>();
 
-    Ok(Response::new(full(reversed_body)))
+    Ok(request_utils::send(reversed_body))
 }

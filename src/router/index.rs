@@ -1,7 +1,7 @@
 use minijinja::context;
+use crate::request_utils;
 use crate::Context;
 use std::sync::Arc;
-use crate::request_utils::full;
 use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
 use hyper::body::Bytes;
@@ -15,6 +15,5 @@ pub fn get(_req: Request<Incoming>, ctx: Arc<Context<'_>>) -> Result<Response<Bo
         bio => "Rigging my sailboat"
     };
     let body = tmpl.render(context).unwrap().into_bytes();
-
-    Ok(Response::new(full(body)))
+    Ok(request_utils::send(body))
 }
