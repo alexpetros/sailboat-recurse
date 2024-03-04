@@ -10,5 +10,5 @@ Commands:
 
 * `make` - Start the development server in watch mode
 * `make test` - Run the test suite
-* `make watch-test` - Run the test suite in watch mode
+* `make wtest` - Run the test suite in watch mode
 

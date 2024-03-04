@@ -12,6 +12,6 @@ test:
 	cargo build
 	@./test/integration/run-integration-tests.sh
 
-.PHONY: watch-test
-watch-test:
+.PHONY: wtest
+wtest:
 	cargo watch -s 'cargo build && ./test/integration/run-integration-tests.sh'
