@@ -1,20 +1,34 @@
 <!DOCTYPE html>
 <title>Sailboat</title>
-<h1>{{ name }}'s Sailboat!</h1>
+<link rel="stylesheet" href="/static/common.css">
 
-<section>
-  <h2>Profile</h2>
-  <dl>
-    <dt>Name:</dt><dd class=name>{{ name }}</dd>
-    <dt>Bio:</dt><dd class=bio>{{ bio }}</dd>
-  </dl>
-</section>
-
-<section>
-  <h2>Feeds</h2>
+<nav>
   <ul>
-    <li>Blog
-    <li>Tweets
-    <li>Photos
+    <li><a href="/">Home</a></li>
+    <li><a href="/profile">Profile</a></li>
   </ul>
-</section>
+</nav>
+
+<main class=feed>
+  <h1>{{ name }}'s Sailboat Feed</h1>
+  <div class=post>
+    This is a first post
+  </div>
+</main>
+
+<!-- <section> -->
+<!--   <h2>Profile</h2> -->
+<!--   <dl> -->
+<!--     <dt>Name:</dt><dd class=name>{{ name }}</dd> -->
+<!--     <dt>Bio:</dt><dd class=bio>{{ bio }}</dd> -->
+<!--   </dl> -->
+<!-- </section> -->
+
+<!-- <section> -->
+<!--   <h2>Feeds</h2> -->
+<!--   <ul> -->
+<!--     <li>Blog -->
+<!--     <li>Tweets -->
+<!--     <li>Photos -->
+<!--   </ul> -->
+<!-- </section> -->

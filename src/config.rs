@@ -36,7 +36,6 @@ mod tests {
         ($($x:expr),*) => (vec![$($x.to_string()),*]);
     }
 
-
     #[test]
     fn no_args_default() {
         let args = str_vec!["sailboat"];

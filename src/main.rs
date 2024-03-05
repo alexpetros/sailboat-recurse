@@ -1,12 +1,12 @@
-use crate::config::Config;
 use std::env;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::net::SocketAddr;
 use hyper::body;
 use hyper::Request;
 use minijinja::path_loader;
+use crate::config::Config;
 use crate::router::router;
-use std::net::SocketAddr;
 
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
