@@ -9,9 +9,9 @@ $(DEBUG_BUILD):
 
 .PHONY: test
 test:
-	cargo build
+	cargo test
 	@./test/integration/run-integration-tests.sh
 
 .PHONY: wtest
 wtest:
-	cargo watch -s 'cargo build && ./test/integration/run-integration-tests.sh'
+	cargo watch -s 'cargo test && ./test/integration/run-integration-tests.sh'
