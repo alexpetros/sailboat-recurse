@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="shortcut icon" href="/static/images/favicon.png" type="image/x-icon" >
+<link rel="stylesheet" href="/static/common.css">
+<!-- <script src="/htmx-{{HTMX_VERSION}}/htmx.js"></script> -->
+
+{% block head %}{% endblock %}
+
+{% if env == 'debug' %}
+<div class="dev-banner">DEVELOPMENT</div>
+{% endif %}
+
+<nav>
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/profile">Profile</a></li>
+  </ul>
+</nav>
+<main>
+<!-- <dialog id=error-dialog class=error></dialog> -->
+{% block main %}{% endblock %}
+</main>

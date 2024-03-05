@@ -1,5 +1,5 @@
 DEBUG_BUILD = ./target/debug/sailboat
-WATCH_FLAGS = --ignore 'src/templates/'
+# WATCH_FLAGS = --ignore 'src/templates/'
 
 all: $(DEBUG_BUILD)
 	cargo watch $(WATCH_FLAGS) -x run

@@ -1,13 +1,10 @@
-<!DOCTYPE html>
-<title>Sailboat</title>
-<link rel="stylesheet" href="/common.css">
+{% extends 'base.html' %}
 
-<nav>
-  <ul>
-    <li><a href="/">Home</a></li>
-    <li><a href="/profile">Profile</a></li>
-  </ul>
-</nav>
+{% block head %}
+<title>Sailboat</title>
+{% endblock %}
+
+{% block main %}
 
 <main class=feed>
   <h1>{{ name }}'s Sailboat Feed</h1>
@@ -16,6 +13,7 @@
   </div>
 </main>
 
+{% endblock %}
 <!-- <section> -->
 <!--   <h2>Profile</h2> -->
 <!--   <dl> -->

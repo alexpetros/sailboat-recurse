@@ -22,7 +22,7 @@ mod static_files;
 
 
 #[derive(Clone)]
-pub struct Context<'a> {
+pub struct GlobalContext<'a> {
     env: Arc<Environment<'a>>,
     statics: Arc<HashMap<String, Vec<u8>>>
 }
@@ -49,7 +49,7 @@ async fn run_server(port: u16) -> Result<(), Box<dyn std::error::Error + Send + 
     let statics = static_files::load_static();
     let statics = Arc::new(statics);
 
-    let ctx = Arc::new(Context { env, statics });
+    let g_ctx = Arc::new(GlobalContext { env, statics });
 
     let addr: SocketAddr = format!("127.0.0.1:{}", port).parse()?;
     let listener = TcpListener::bind(addr).await?;
@@ -61,7 +61,7 @@ async fn run_server(port: u16) -> Result<(), Box<dyn std::error::Error + Send + 
         // Wrapper to use Hyper traits with Tokio streams
         let io = TokioIo::new(stream);
 
-        let shared_ctx = ctx.clone(); // Why is this necessary?
+        let shared_ctx = g_ctx.clone(); // Why is this necessary?
         let service = service_fn(move |req: Request<body::Incoming>| {
             router(req, shared_ctx.clone())
         });
