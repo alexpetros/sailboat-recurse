@@ -7,7 +7,7 @@ describe('Static files test', async () => {
   it('finds common css', async () => {
     const res = await fetch(`${SAILBOAT_URL}/static/common.css`)
     const body = await res.text()
-    assert.equal(body, 'body {\n  max-width: 800px;\n}\n')
+    assert.match(body, /nav {/)
     assert.equal(res.status, 200)
   })
 

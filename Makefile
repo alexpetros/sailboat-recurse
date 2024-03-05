@@ -1,7 +1,8 @@
-$DEBUG_BUILD = ./target/debug/sailboat
+DEBUG_BUILD = ./target/debug/sailboat
+WATCH_FLAGS = --ignore 'src/templates/'
 
 all: $(DEBUG_BUILD)
-	cargo watch -x run
+	cargo watch $(WATCH_FLAGS) -x run
 
 .PHONY: $(DEBUG_BUILD)
 $(DEBUG_BUILD):
@@ -14,4 +15,4 @@ test:
 
 .PHONY: wtest
 wtest:
-	cargo watch -s 'cargo test && ./test/integration/run-integration-tests.sh'
+	cargo watch $(WATCH_FLAGS) -s 'cargo test && ./test/integration/run-integration-tests.sh'
