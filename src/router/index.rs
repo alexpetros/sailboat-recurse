@@ -9,6 +9,9 @@ use hyper::{Request, Response};
 
 pub fn get(_req: Request<Incoming>, ctx: Arc<GlobalContext<'_>>) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
     let context = context! {
+        posts => vec! [
+            context! { user_name => "Alex", user_handle => "awp@alexpetros.com" }
+        ],
         name => "Alex",
         bio => "Rigging my sailboat"
     };

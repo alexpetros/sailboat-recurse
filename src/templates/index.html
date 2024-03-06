@@ -12,13 +12,15 @@
 
   <section class=feed>
   <h2>Feed</h2>
+  {% for post in posts %}
   <article class=post>
     <div>
-      <span class=user>{{ name }}</span> -
-      <span class=handle>@{{ handle }}</span>
+      <span class=user>{{ post.user_name }}</span> -
+      <span class=handle>{{ post.user_handle }}</span>
     </div>
     <p>This is a first post</p>
   </article>
+  {% endfor %}
   </section>
 </main>
 
