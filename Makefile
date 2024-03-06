@@ -8,6 +8,10 @@ all: $(DEBUG_BUILD)
 $(DEBUG_BUILD):
 	cargo build
 
+.PHONY: release
+release:
+	cargo run --release
+
 .PHONY: test
 test:
 	cargo test

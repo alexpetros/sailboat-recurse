@@ -1,4 +1,5 @@
 mod index;
+mod debug;
 mod serve_static;
 
 use std::sync::Arc;
@@ -21,7 +22,10 @@ pub async fn router(
     let method = req.method();
     let path = req.uri().path();
 
-    debug!("Received {} request at {}", method, path);
+    if path != "/debug" {
+        debug!("Received {} request at {}", method, path);
+    }
+
     // Serve static files separately
     if path.starts_with("/static") {
         return serve_static::get(req, g_ctx);
@@ -29,6 +33,7 @@ pub async fn router(
 
     match (method, path) {
         (GET, "/healthcheck") => Ok(request_utils::send("OK")),
+        (GET, "/debug") => debug::get(req, g_ctx),
         (GET, "/") => index::get(req, g_ctx),
 
         // Return 404 otherwise

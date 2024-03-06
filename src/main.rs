@@ -1,5 +1,5 @@
+use crate::request_utils::GlobalContext;
 use std::env;
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::net::SocketAddr;
 use hyper::body;
@@ -21,16 +21,10 @@ mod request_utils;
 mod static_files;
 
 
-#[derive(Clone)]
-pub struct GlobalContext<'a> {
-    env: Arc<Environment<'a>>,
-    statics: Arc<HashMap<String, Vec<u8>>>
-}
-
 fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let config = Config::new(env::args().collect());
     let port = config.port;
-    run_server(port)
+run_server(port)
 }
 
 #[tokio::main]
@@ -49,7 +43,7 @@ async fn run_server(port: u16) -> Result<(), Box<dyn std::error::Error + Send + 
     let statics = static_files::load_static();
     let statics = Arc::new(statics);
 
-    let g_ctx = Arc::new(GlobalContext { env, statics });
+    let g_ctx = Arc::new(GlobalContext::new(env, statics));
 
     let addr: SocketAddr = format!("127.0.0.1:{}", port).parse()?;
     let listener = TcpListener::bind(addr).await?;

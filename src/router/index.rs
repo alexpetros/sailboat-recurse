@@ -8,12 +8,10 @@ use hyper::body::Bytes;
 use hyper::{Request, Response};
 
 pub fn get(_req: Request<Incoming>, ctx: Arc<GlobalContext<'_>>) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
-
-    let tmpl = ctx.env.get_template("index.html").unwrap();
     let context = context! {
         name => "Alex",
         bio => "Rigging my sailboat"
     };
-    let body = tmpl.render(context).unwrap().into_bytes();
+    let body = ctx.render("index.html", context);
     Ok(request_utils::send(body))
 }

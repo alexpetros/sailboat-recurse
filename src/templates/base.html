@@ -7,11 +7,10 @@
 
 {% block head %}{% endblock %}
 
-{% if env == 'debug' %}
-<div class="dev-banner">DEVELOPMENT</div>
-{% endif %}
-
 <nav>
+  <!-- {% if env == 'debug' %} -->
+  <!--   <div class="dev-banner">DEVELOPMENT</div> -->
+  <!-- {% endif %} -->
   <ul>
     <li><a href="/">Home</a></li>
     <li><a href="/profile">Profile</a></li>
@@ -21,3 +20,18 @@
 <!-- <dialog id=error-dialog class=error></dialog> -->
 {% block main %}{% endblock %}
 </main>
+
+{% if env == 'debug' %}
+<script>
+  let _debug_time = undefined
+  setInterval(async () => {
+    const res = await fetch('/debug')
+    const body = await res.text()
+    if (_debug_time === undefined) {
+      _debug_time = body
+    } else if (_debug_time !== body) {
+      location.reload()
+    }
+  }, 1000)
+</script>
+{% endif %}
