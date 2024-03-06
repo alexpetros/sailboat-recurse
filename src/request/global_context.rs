@@ -29,6 +29,7 @@ impl <'a>GlobalContext<'a> {
         let context = context! { ..local_values, ..global_values };
         tmpl.render(context).unwrap().into_bytes()
     }
+
 }
 
 

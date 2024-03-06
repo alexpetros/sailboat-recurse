@@ -37,7 +37,7 @@ pub async fn router(
         (GET, "/") => index::get(req, g_ctx),
 
         // Return 404 otherwise
-        _ => Ok(request::not_found())
+        _ => request::not_found(req, g_ctx)
     }
 }
 

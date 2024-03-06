@@ -14,6 +14,6 @@ pub fn get(req: Request<Incoming>, ctx: Arc<GlobalContext<'_>>) -> Result<Respon
 
     match contents {
         Some(body) => Ok(request::send(body.clone())),
-        None => Ok(request::not_found())
+        None => request::not_found(req, ctx)
     }
 }
