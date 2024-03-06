@@ -1,10 +1,11 @@
-use crate::request_utils;
-use crate::GlobalContext;
+use crate::request::global_context::GlobalContext;
 use std::sync::Arc;
 use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
 use hyper::body::Bytes;
 use hyper::{Request, Response};
+
+use crate::request;
 
 pub fn get(req: Request<Incoming>, ctx: Arc<GlobalContext<'_>>) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
     let path = req.uri().path();
@@ -12,7 +13,7 @@ pub fn get(req: Request<Incoming>, ctx: Arc<GlobalContext<'_>>) -> Result<Respon
     let contents = ctx.statics.get(file);
 
     match contents {
-        Some(body) => Ok(request_utils::send(body.clone())),
-        None => Ok(request_utils::not_found())
+        Some(body) => Ok(request::send(body.clone())),
+        None => Ok(request::not_found())
     }
 }

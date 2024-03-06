@@ -9,8 +9,8 @@ use hyper::Method;
 use hyper::{Request, Response};
 use tracing::debug;
 
-use crate::request_utils;
-use crate::GlobalContext;
+use crate::request;
+use crate::request::global_context::GlobalContext;
 
 const GET: &Method = &Method::GET;
 // const POST: &Method = &Method::POST;
@@ -32,12 +32,12 @@ pub async fn router(
     }
 
     match (method, path) {
-        (GET, "/healthcheck") => Ok(request_utils::send("OK")),
+        (GET, "/healthcheck") => Ok(request::send("OK")),
         (GET, "/debug") => debug::get(req, g_ctx),
         (GET, "/") => index::get(req, g_ctx),
 
         // Return 404 otherwise
-        _ => Ok(request_utils::not_found())
+        _ => Ok(request::not_found())
     }
 }
 

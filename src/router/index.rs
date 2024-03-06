@@ -1,6 +1,6 @@
+use crate::request;
+use crate::request::global_context::GlobalContext;
 use minijinja::context;
-use crate::request_utils;
-use crate::GlobalContext;
 use std::sync::Arc;
 use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
@@ -13,5 +13,5 @@ pub fn get(_req: Request<Incoming>, ctx: Arc<GlobalContext<'_>>) -> Result<Respo
         bio => "Rigging my sailboat"
     };
     let body = ctx.render("index.html", context);
-    Ok(request_utils::send(body))
+    Ok(request::send(body))
 }

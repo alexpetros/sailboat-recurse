@@ -1,4 +1,4 @@
-use crate::request_utils::GlobalContext;
+use crate::request::global_context::GlobalContext;
 use std::env;
 use std::sync::Arc;
 use std::net::SocketAddr;
@@ -17,7 +17,7 @@ use minijinja::Environment;
 
 mod config;
 mod router;
-mod request_utils;
+mod request;
 mod static_files;
 
 
