@@ -1,3 +1,4 @@
+use tokio_util::task::TaskTracker;
 use crate::request::global_context::GlobalContext;
 use std::env;
 use std::sync::Arc;
@@ -5,6 +6,7 @@ use std::net::SocketAddr;
 use hyper::body;
 use hyper::Request;
 use minijinja::path_loader;
+use tokio::signal;
 use crate::config::Config;
 use crate::router::router;
 
@@ -21,14 +23,27 @@ mod request;
 mod static_files;
 
 
-fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+#[tokio::main]
+async fn main() {
     let config = Config::new(env::args().collect());
     let port = config.port;
-run_server(port)
+    let tracker = Arc::new(TaskTracker::new());
+
+    tokio::task::spawn(run_server(port, tracker.clone()));
+
+    // tracker.wait().await;
+    match signal::ctrl_c().await {
+        Ok(()) => {
+            info!("Receieved shutdown signal, waiting for requests to end.");
+            tracker.close();
+            tracker.wait().await;
+        },
+        Err(err) => { eprintln!("Unable to listen for shutdown signal: {}", err); },
+    }
+
 }
 
-#[tokio::main]
-async fn run_server(port: u16) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn run_server(port: u16, tracker: Arc<TaskTracker>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Setup logging (leaving at DEBUG level for now)
     tracing_subscriber::fmt()
         .with_max_level(LevelFilter::DEBUG)
@@ -61,7 +76,7 @@ async fn run_server(port: u16) -> Result<(), Box<dyn std::error::Error + Send + 
         });
 
         // Spawn a tokio task to serve multiple connections concurrently
-        tokio::task::spawn(async move {
+        tracker.spawn(async move {
             if let Err(err) = http1::Builder::new()
                 .serve_connection(io, service)
                 .await
