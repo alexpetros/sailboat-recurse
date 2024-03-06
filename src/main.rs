@@ -31,12 +31,14 @@ async fn main() {
 
     tokio::task::spawn(run_server(port, tracker.clone()));
 
-    // tracker.wait().await;
+    // TODO upgrade this to handle interrupts
     match signal::ctrl_c().await {
         Ok(()) => {
             info!("Receieved shutdown signal, waiting for requests to end.");
-            tracker.close();
-            tracker.wait().await;
+            // TODO actually exit gracefully
+            std::process::exit(0);
+            // tracker.close();
+            // tracker.wait().await;
         },
         Err(err) => { eprintln!("Unable to listen for shutdown signal: {}", err); },
     }
@@ -44,6 +46,7 @@ async fn main() {
 }
 
 async fn run_server(port: u16, tracker: Arc<TaskTracker>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+
     // Setup logging (leaving at DEBUG level for now)
     tracing_subscriber::fmt()
         .with_max_level(LevelFilter::DEBUG)
