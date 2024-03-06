@@ -31,13 +31,15 @@ pub async fn router(
         return serve_static::get(req, g_ctx);
     }
 
-    match (method, path) {
-        (GET, "/healthcheck") => Ok(request::send("OK")),
-        (GET, "/debug") => debug::get(req, g_ctx),
-        (GET, "/") => index::get(req, g_ctx),
+    let hander = match (method, path) {
+        (GET, "/healthcheck") => request::ok,
+        (GET, "/debug") => debug::get,
+        (GET, "/") => index::get,
 
-        // Return 404 otherwise
-        _ => request::not_found(req, g_ctx)
-    }
+        // Return 404 if the request is not known
+        _ => request::not_found
+    };
+
+    hander(req, g_ctx)
 }
 

@@ -7,10 +7,19 @@
 {% block main %}
 
 <main class=feed>
-  <h1>{{ name }}'s Sailboat Feed</h1>
-  <div class=post>
-    This is a first post
-  </div>
+
+  <h1>{{ name }}'s Sailboat</h1>
+
+  <section class=feed>
+  <h2>Feed</h2>
+  <article class=post>
+    <div>
+      <span class=user>{{ name }}</span> -
+      <span class=handle>@{{ handle }}</span>
+    </div>
+    <p>This is a first post</p>
+  </article>
+  </section>
 </main>
 
 {% endblock %}

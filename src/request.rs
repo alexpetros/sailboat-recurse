@@ -36,3 +36,6 @@ pub fn not_found(_req: Request<Incoming>, ctx: Arc<GlobalContext<'_>>) -> Result
     Ok(res)
 }
 
+pub fn ok(_: Request<Incoming>, _: Arc<GlobalContext<'_>>) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+    Ok(send("OK".to_string()))
+}
