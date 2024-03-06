@@ -1,24 +1,42 @@
 body {
   display: flex;
   flex-direction: row;
+  padding-top: 20px;
 }
 
-nav {
+.site-nav {
   width: 100px;
-  background-color: darkgray;
-  margin: 20px 10px 0 0;
+  background-color: black;
+  margin: 0 30px 0 0;
+  padding: 0;
 }
 
-nav ul {
+.site-nav ul {
   list-style: none;
   margin: 0;
   padding: 0;
   text-align: center;
 }
 
-nav ul li {
+.site-nav li {
+  margin: 0;
+}
+
+.site-nav li:hover {
+  background-color: gray;
+}
+
+.site-nav a {
+  color: white;
+  display: block;
+  padding: 10px 0;
+  text-decoration: none;
 }
 
 main {
-  margin-top: 20px;
+
+}
+
+h1 {
+  margin-top: 0;
 }
