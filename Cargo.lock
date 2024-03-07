@@ -556,6 +556,7 @@ dependencies = [
  "hyper-util",
  "minijinja",
  "rusqlite",
+ "serde",
  "tokio",
  "tokio-util",
  "tracing",

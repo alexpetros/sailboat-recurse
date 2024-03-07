@@ -1,4 +1,5 @@
 DEBUG_BUILD = ./target/debug/sailboat
+DB_NAME = ./sailboat.db
 # WATCH_FLAGS = --ignore 'src/templates/'
 
 all: $(DEBUG_BUILD)
@@ -20,3 +21,8 @@ test:
 .PHONY: wtest
 wtest:
 	cargo watch $(WATCH_FLAGS) -s 'cargo test && ./test/integration/run-integration-tests.sh'
+
+.PHONY: reset-db
+reset-db:
+	rm -f $(DB_NAME)
+	cat ./db/migrations/0-init.sql | sqlite3 $(DB_NAME)

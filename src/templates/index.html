@@ -15,8 +15,8 @@
   {% for post in posts %}
   <article class=post>
     <div>
-      <span class=user>{{ post.user_name }}</span> -
-      <span class=handle>{{ post.user_handle }}</span>
+      <span class=user>{{ post.author_name }}</span> -
+      <span class=handle>{{ post.author_handle }}</span>
     </div>
     <p>This is a first post</p>
   </article>
@@ -25,6 +25,7 @@
 </main>
 
 {% endblock %}
+
 <!-- <section> -->
 <!--   <h2>Profile</h2> -->
 <!--   <dl> -->
