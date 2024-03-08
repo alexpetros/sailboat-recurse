@@ -21,6 +21,7 @@ mod config;
 mod router;
 mod request;
 mod static_files;
+mod sqlite;
 
 
 #[tokio::main]

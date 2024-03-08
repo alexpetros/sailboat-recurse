@@ -1,13 +1,12 @@
+use crate::request::ResponseResult;
 use serde::Serialize;
 use crate::request;
 use crate::request::global_context::GlobalContext;
 use minijinja::context;
 use rusqlite::Connection;
 use std::sync::Arc;
-use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
-use hyper::body::Bytes;
-use hyper::{Request, Response};
+use hyper::Request;
 
 #[derive(Debug, Serialize)]
 struct Post {
@@ -16,7 +15,7 @@ struct Post {
     content: String
 }
 
-pub fn get(_req: Request<Incoming>, ctx: Arc<GlobalContext<'_>>) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+pub fn get(_req: Request<Incoming>, ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
     let conn = Connection::open("./sailboat.db").unwrap();
     let mut query = conn.prepare("SELECT author_name, author_handle, content FROM posts").unwrap();
     let rows = query.query_map((), |row| {
@@ -26,7 +25,7 @@ pub fn get(_req: Request<Incoming>, ctx: Arc<GlobalContext<'_>>) -> Result<Respo
             content: row.get(2)?
         };
         Ok(post)
-    }).unwrap();
+    })?;
 
     let mut posts = Vec::new();
     for post in rows {

@@ -2,11 +2,10 @@ mod index;
 mod debug;
 mod serve_static;
 
+use crate::request::ResponseResult;
 use std::sync::Arc;
-use http_body_util::combinators::BoxBody;
-use hyper::body::Bytes;
 use hyper::Method;
-use hyper::{Request, Response};
+use hyper::Request;
 use tracing::debug;
 
 use crate::request;
@@ -18,7 +17,7 @@ const GET: &Method = &Method::GET;
 pub async fn router(
     req: Request<hyper::body::Incoming>,
     g_ctx: Arc<GlobalContext<'_>>,
-) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+) -> ResponseResult {
     let method = req.method();
     let path = req.uri().path();
 
