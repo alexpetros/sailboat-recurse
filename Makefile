@@ -26,3 +26,7 @@ wtest:
 reset-db:
 	rm -f $(DB_NAME)
 	cat ./db/migrations/0-init.sql | sqlite3 $(DB_NAME)
+
+.PHONY: check
+check:
+	cargo check

@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::time::UNIX_EPOCH;
 use minijinja::Environment;
 use std::sync::Arc;
+use rusqlite::Connection;
 
 const ENV: &str = if cfg!(debug_assertions) { "debug" } else { "prod" };
 
@@ -30,6 +31,17 @@ impl <'a>GlobalContext<'a> {
         tmpl.render(context).unwrap().into_bytes()
     }
 
+}
+
+pub struct Context<'a> {
+    pub global: Arc<GlobalContext<'a>>,
+    pub db: Connection
+}
+
+impl<'a> Context<'a> {
+    pub fn render(&self, path: &str, local_values: Value) -> Vec<u8> {
+        self.global.render(path, local_values)
+    }
 }
 
 

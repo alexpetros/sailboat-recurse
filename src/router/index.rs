@@ -1,10 +1,9 @@
 use crate::request::ResponseResult;
 use serde::Serialize;
 use crate::request;
-use crate::request::global_context::GlobalContext;
+use crate::request::global_context::Context;
 use minijinja::context;
 use rusqlite::Connection;
-use std::sync::Arc;
 use hyper::body::Incoming;
 use hyper::Request;
 
@@ -15,9 +14,9 @@ struct Post {
     content: String
 }
 
-pub fn get(_req: Request<Incoming>, ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
+pub fn get(_req: Request<Incoming>, ctx: Context<'_>) -> ResponseResult {
     let conn = Connection::open("./sailboat.db").unwrap();
-    let mut query = conn.prepare("SELECT author_name, author_handle, content FROM posts").unwrap();
+    let mut query = conn.prepare("SELECT author_name, author_handle, content FROM posts")?;
     let rows = query.query_map((), |row| {
         let post = Post {
             author_name: row.get(0)?,

@@ -1,11 +1,10 @@
 pub mod global_context;
 
+use crate::request::global_context::Context;
 use core::fmt::Display;
 use hyper::Request;
 use hyper::body::Incoming;
 use minijinja::context;
-use std::sync::Arc;
-use crate::GlobalContext;
 use hyper::StatusCode;
 use hyper::Response;
 use http_body_util::Empty;
@@ -54,7 +53,7 @@ pub fn send<T: Into<Bytes>>(body: T) -> Response<BoxBody<hyper::body::Bytes, hyp
     Response::new(full(body))
 }
 
-pub fn not_found(_req: Request<Incoming>, ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
+pub fn not_found(_req: Request<Incoming>, ctx: Context<'_>) -> ResponseResult {
 
     let page = ctx.render("404.html", context! {});
     let mut res = send(page);
@@ -63,6 +62,6 @@ pub fn not_found(_req: Request<Incoming>, ctx: Arc<GlobalContext<'_>>) -> Respon
     Ok(res)
 }
 
-pub fn ok(_: Request<Incoming>, _: Arc<GlobalContext<'_>>) -> ResponseResult {
+pub fn ok(_: Request<Incoming>, _: Context<'_>) -> ResponseResult {
     Ok(send("OK".to_string()))
 }
