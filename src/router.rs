@@ -10,6 +10,7 @@ use hyper::Method;
 use hyper::Request;
 use hyper::body::Incoming;
 use tracing::debug;
+use tracing::warn;
 
 use crate::request;
 use crate::request::global_context::GlobalContext;
@@ -25,8 +26,8 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Re
         debug!("Received {} request at {}", method, path);
     }
 
-    let db = get_conn("./sailboat")?;
-    let ctx = Context { global: g_ctx, db };
+    let db = get_conn("./sailboat.db")?;
+    let ctx = Context { global: g_ctx.clone(), db };
 
     // Serve static files separately
     if path.starts_with("/static") {
@@ -42,6 +43,12 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Re
         _ => request::not_found
     };
 
-    hander(req, ctx)
+    let result = hander(req, ctx);
+    if let Err(error) = result {
+        warn!("{}", error);
+        request::server_error(g_ctx.clone())
+    } else {
+        result
+    }
 }
 

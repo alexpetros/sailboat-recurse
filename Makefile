@@ -1,6 +1,6 @@
 DEBUG_BUILD = ./target/debug/sailboat
 DB_NAME = ./sailboat.db
-WATCH_FLAGS = -i '*.db' -i '*-shm' -i '*-wal'
+# WATCH_FLAGS = -i '*.db' -i '*-shm' -i '*-wal'
 
 all: $(DEBUG_BUILD)
 	cargo watch $(WATCH_FLAGS) -x run

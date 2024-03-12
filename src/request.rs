@@ -1,5 +1,7 @@
 pub mod global_context;
 
+use std::sync::Arc;
+use crate::GlobalContext;
 use crate::request::global_context::Context;
 use core::fmt::Display;
 use hyper::Request;
@@ -23,7 +25,10 @@ pub enum ServerError {
 impl std::error::Error for ServerError {}
 impl Display for ServerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "test")
+        match *self {
+            ServerError::Hyper(ref err) => write!(f, "[HYPER ERROR] {}", err),
+            ServerError::Sql(ref err) => write!(f, "[SQL ERROR] {}", err),
+        }
     }
 }
 
@@ -54,11 +59,16 @@ pub fn send<T: Into<Bytes>>(body: T) -> Response<BoxBody<hyper::body::Bytes, hyp
 }
 
 pub fn not_found(_req: Request<Incoming>, ctx: Context<'_>) -> ResponseResult {
-
     let page = ctx.render("404.html", context! {});
     let mut res = send(page);
-
     *res.status_mut() = StatusCode::NOT_FOUND;
+    Ok(res)
+}
+
+pub fn server_error(g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
+    let page = g_ctx.render("500.html", context! {});
+    let mut res = send(page);
+    *res.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
     Ok(res)
 }
 
