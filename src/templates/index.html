@@ -20,7 +20,7 @@ textarea[name=post] {
   <section class=feed>
   <h2>Create</h2>
   <form action="/post" method=post>
-    <textarea name="post" placeholder="{{name}} is..."></textarea>
+    <textarea name="content" placeholder="{{name}} is..."></textarea>
     <div><button>Post!</button></div>
   </form>
   </section>
@@ -33,7 +33,7 @@ textarea[name=post] {
       <span class=user>{{ post.author_name }}</span> -
       <span class=handle>{{ post.author_handle }}</span>
     </div>
-    <p>This is a first post</p>
+    <p>{{ post.content }}</p>
   </article>
   {% endfor %}
   </section>

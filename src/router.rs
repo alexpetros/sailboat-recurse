@@ -2,6 +2,7 @@ mod index;
 mod post;
 mod debug;
 mod serve_static;
+mod healthcheck;
 
 use crate::server::context::Context;
 use crate::server::response::ResponseResult;
@@ -35,7 +36,7 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
     }
 
     let result = match (method, path) {
-        (GET, "/healthcheck") => response::ok(),
+        (GET, "/healthcheck") => healthcheck::get(req, ctx),
         (GET, "/debug") => debug::get(req, ctx),
         (GET, "/") => index::get(req, ctx),
         (POST, "/post") => post::post(req, ctx).await,

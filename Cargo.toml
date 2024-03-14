@@ -14,3 +14,4 @@ minijinja = { version = "1.0.12", features = ["multi_template", "loader"] }
 tokio-util = { version = "0.7.10", features = ["rt"] }
 rusqlite = "0.31.0"
 serde = { version = "1.0.197", features = ["derive"] }
+serde_html_form = "0.2.5"
