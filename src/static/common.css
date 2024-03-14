@@ -34,6 +34,10 @@ body {
   text-decoration: none;
 }
 
+address {
+  font-style: normal;
+}
+
 main {
   width: 100%;
 }

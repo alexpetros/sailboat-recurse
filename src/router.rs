@@ -18,6 +18,7 @@ use crate::server::response;
 
 const GET: &Method = &Method::GET;
 const POST: &Method = &Method::POST;
+const DELETE: &Method = &Method::DELETE;
 
 pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
     let method = req.method();
@@ -40,6 +41,7 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
         (GET, "/debug") => debug::get(req, ctx),
         (GET, "/") => index::get(req, ctx),
         (POST, "/post") => post::post(req, ctx).await,
+        (DELETE, "/post") => post::post(req, ctx).await,
 
         // Return 404 if the request is not known
         _ => response::not_found(req, ctx).await

@@ -6,10 +6,22 @@
 
 {% block main %}
 <style>
-textarea[name=post] {
+textarea[name=content] {
   width: 100%;
   max-width: 400px;
   resize: vertical;
+}
+
+.post {
+  padding: 5px 5px;
+}
+
+.userinfo {
+  display: flex;
+  justify-content: space-between;
+}
+button.delete {
+  display: block;
 }
 </style>
 
@@ -29,9 +41,12 @@ textarea[name=post] {
   <h2>Feed</h2>
   {% for post in posts %}
   <article class=post>
-    <div>
-      <span class=user>{{ post.author_name }}</span> -
-      <span class=handle>{{ post.author_handle }}</span>
+    <div class=userinfo>
+      <address>
+        <span class=user>{{ post.author_name }}</span> -
+        <span class=handle>{{ post.author_handle }}</span>
+      </address>
+      <button class=delete>Delete</button>
     </div>
     <p>{{ post.content }}</p>
   </article>

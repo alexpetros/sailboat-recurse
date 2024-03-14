@@ -31,3 +31,5 @@ pub async fn post(req: Request, ctx: Context<'_>) -> ResponseResult {
     Ok(send("".to_owned()))
 }
 
+// pub async fn delete(req: Request, ctx: Context<'_>) -> ResponseResult {
+// }
