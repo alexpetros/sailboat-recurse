@@ -7,18 +7,20 @@ use crate::server::response::ResponseResult;
 
 #[derive(Debug, Serialize)]
 struct Post {
+    post_id: i64,
     author_name: String,
     author_handle: String,
     content: String
 }
 
 pub fn get(_req: Request, ctx: Context<'_>) -> ResponseResult {
-    let mut query = ctx.db.prepare("SELECT author_name, author_handle, content FROM posts")?;
+    let mut query = ctx.db.prepare("SELECT post_id, author_name, author_handle, content FROM posts")?;
     let rows = query.query_map((), |row| {
         let post = Post {
-            author_name: row.get(0)?,
-            author_handle: row.get(1)?,
-            content: row.get(2)?
+            post_id: row.get(0)?,
+            author_name: row.get(1)?,
+            author_handle: row.get(2)?,
+            content: row.get(3)?
         };
         Ok(post)
     })?;

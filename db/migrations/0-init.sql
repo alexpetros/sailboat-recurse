@@ -1,4 +1,5 @@
 CREATE TABLE posts (
+  post_id INTEGER PRIMARY KEY,
   author_name TEXT,
   author_handle TEXT,
   content TEXT

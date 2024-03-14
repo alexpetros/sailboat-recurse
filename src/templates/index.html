@@ -46,7 +46,7 @@ button.delete {
         <span class=user>{{ post.author_name }}</span> -
         <span class=handle>{{ post.author_handle }}</span>
       </address>
-      <button class=delete>Delete</button>
+      <button hx-delete="/posts/{{ post.post_id }}" class=delete>Delete</button>
     </div>
     <p>{{ post.content }}</p>
   </article>
