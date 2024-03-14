@@ -5,10 +5,25 @@
 {% endblock %}
 
 {% block main %}
+<style>
+textarea[name=post] {
+  width: 100%;
+  max-width: 400px;
+  resize: vertical;
+}
+</style>
 
 <main class=feed>
 
   <h1>{{ name }}'s Sailboat</h1>
+
+  <section class=feed>
+  <h2>Create</h2>
+  <form action="/post" method=post>
+    <textarea name="post" placeholder="{{name}} is..."></textarea>
+    <div><button>Post!</button></div>
+  </form>
+  </section>
 
   <section class=feed>
   <h2>Feed</h2>
@@ -22,6 +37,7 @@
   </article>
   {% endfor %}
   </section>
+
 </main>
 
 {% endblock %}

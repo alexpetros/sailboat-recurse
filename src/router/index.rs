@@ -1,10 +1,9 @@
 use crate::request::ResponseResult;
 use serde::Serialize;
 use crate::request;
+use crate::request::Request;
 use crate::request::global_context::Context;
 use minijinja::context;
-use hyper::body::Incoming;
-use hyper::Request;
 
 #[derive(Debug, Serialize)]
 struct Post {
@@ -13,7 +12,7 @@ struct Post {
     content: String
 }
 
-pub fn get(_req: Request<Incoming>, ctx: Context<'_>) -> ResponseResult {
+pub fn get(_req: Request, ctx: Context<'_>) -> ResponseResult {
     let mut query = ctx.db.prepare("SELECT author_name, author_handle, content FROM posts")?;
     let rows = query.query_map((), |row| {
         let post = Post {

@@ -4,11 +4,11 @@ use std::env;
 use std::sync::Arc;
 use std::net::SocketAddr;
 use hyper::body;
-use hyper::Request;
 use minijinja::path_loader;
 use tokio::signal;
 use crate::config::Config;
 use crate::router::router;
+use crate::request::Request;
 
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
@@ -75,8 +75,8 @@ async fn run_server(port: u16, tracker: Arc<TaskTracker>) -> Result<(), Box<dyn 
         let io = TokioIo::new(stream);
 
         let shared_ctx = g_ctx.clone(); // Why is this necessary?
-        let service = service_fn(move |req: Request<body::Incoming>| {
-            router(req, shared_ctx.clone())
+        let service = service_fn(move |req: hyper::Request<body::Incoming>| {
+            router(Request(req), shared_ctx.clone())
         });
 
         // Spawn a tokio task to serve multiple connections concurrently

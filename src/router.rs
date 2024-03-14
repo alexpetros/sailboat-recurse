@@ -1,4 +1,5 @@
 mod index;
+mod post;
 mod debug;
 mod serve_static;
 
@@ -7,18 +8,17 @@ use crate::request::ResponseResult;
 use crate::sqlite::get_conn;
 use std::sync::Arc;
 use hyper::Method;
-use hyper::Request;
-use hyper::body::Incoming;
 use tracing::debug;
 use tracing::warn;
 
 use crate::request;
+use crate::request::Request;
 use crate::request::global_context::GlobalContext;
 
 const GET: &Method = &Method::GET;
-// const POST: &Method = &Method::POST;
+const POST: &Method = &Method::POST;
 
-pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
+pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
     let method = req.method();
     let path = req.uri().path();
 
@@ -31,22 +31,22 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Re
 
     // Serve static files separately
     if path.starts_with("/static") {
-        return serve_static::get(req, ctx);
+        return serve_static::get(req, ctx).await;
     }
 
-    let hander = match (method, path) {
-        (GET, "/healthcheck") => request::ok,
-        (GET, "/debug") => debug::get,
-        (GET, "/") => index::get,
+    let result = match (method, path) {
+        (GET, "/healthcheck") => request::ok(),
+        (GET, "/debug") => debug::get(req, ctx),
+        (GET, "/") => index::get(req, ctx),
+        (POST, "/post") => post::post(req, ctx).await,
 
         // Return 404 if the request is not known
-        _ => request::not_found
+        _ => request::not_found(req, ctx).await
     };
 
-    let result = hander(req, ctx);
     if let Err(error) = result {
         warn!("{}", error);
-        request::server_error(g_ctx.clone())
+        request::server_error(g_ctx)
     } else {
         result
     }

@@ -1,17 +1,16 @@
 use crate::request::global_context::Context;
 use crate::request::ResponseResult;
-use hyper::body::Incoming;
-use hyper::Request;
 
 use crate::request;
+use crate::request::Request;
 
-pub fn get(req: Request<Incoming>, ctx: Context<'_>) -> ResponseResult {
+pub async fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
     let path = req.uri().path();
     let file = &path[8..];
     let contents = ctx.global.statics.get(file);
 
     match contents {
-        Some(body) => Ok(request::send(body.clone())),
-        None => request::not_found(req, ctx)
+        Some(body) => request::send_async(body.clone()).await,
+        None => request::not_found(req, ctx).await
     }
 }
