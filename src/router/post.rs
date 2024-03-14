@@ -1,8 +1,7 @@
-use crate::request::Request;
-use crate::request::ResponseResult;
 use serde::Serialize;
-use crate::request;
-use crate::request::global_context::Context;
+use crate::server::context::Context;
+use crate::server::request::Request;
+use crate::server::response::{ResponseResult, send};
 
 #[derive(Debug, Serialize)]
 struct Post {
@@ -11,9 +10,9 @@ struct Post {
     content: String
 }
 
-pub async fn post(req: Request, ctx: Context<'_>) -> ResponseResult {
+pub async fn post(req: Request, _ctx: Context<'_>) -> ResponseResult {
     let req = req.get_body().await?;
     let text = req.text()?;
-    Ok(request::send(text))
+    Ok(send(text))
 }
 

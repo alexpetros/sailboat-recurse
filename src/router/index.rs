@@ -1,9 +1,9 @@
-use crate::request::ResponseResult;
 use serde::Serialize;
-use crate::request;
-use crate::request::Request;
-use crate::request::global_context::Context;
+use crate::server::context::Context;
 use minijinja::context;
+use crate::server::request::Request;
+use crate::server::response;
+use crate::server::response::ResponseResult;
 
 #[derive(Debug, Serialize)]
 struct Post {
@@ -35,5 +35,5 @@ pub fn get(_req: Request, ctx: Context<'_>) -> ResponseResult {
     };
 
     let body = ctx.render("index.html", context);
-    Ok(request::send(body))
+    Ok(response::send(body))
 }

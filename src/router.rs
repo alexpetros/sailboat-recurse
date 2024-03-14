@@ -3,17 +3,17 @@ mod post;
 mod debug;
 mod serve_static;
 
-use crate::request::global_context::Context;
-use crate::request::ResponseResult;
+use crate::server::context::Context;
+use crate::server::response::ResponseResult;
 use crate::sqlite::get_conn;
 use std::sync::Arc;
 use hyper::Method;
 use tracing::debug;
 use tracing::warn;
 
-use crate::request;
-use crate::request::Request;
-use crate::request::global_context::GlobalContext;
+use crate::server::request::Request;
+use crate::server::context::GlobalContext;
+use crate::server::response;
 
 const GET: &Method = &Method::GET;
 const POST: &Method = &Method::POST;
@@ -35,18 +35,18 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
     }
 
     let result = match (method, path) {
-        (GET, "/healthcheck") => request::ok(),
+        (GET, "/healthcheck") => response::ok(),
         (GET, "/debug") => debug::get(req, ctx),
         (GET, "/") => index::get(req, ctx),
         (POST, "/post") => post::post(req, ctx).await,
 
         // Return 404 if the request is not known
-        _ => request::not_found(req, ctx).await
+        _ => response::not_found(req, ctx).await
     };
 
     if let Err(error) = result {
         warn!("{}", error);
-        request::server_error(g_ctx)
+        response::server_error(g_ctx)
     } else {
         result
     }

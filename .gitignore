@@ -1,4 +1,10 @@
+# Rust build artifacts
 /target
+
+# Local database
 *.db
 *.db-shm
 *.db-wal
+
+# Editors files
+*.swp

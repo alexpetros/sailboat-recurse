@@ -1,8 +1,8 @@
-use crate::request::global_context::Context;
-use crate::request::ResponseResult;
+use crate::server::context::Context;
+use crate::server::response::ResponseResult;
 
-use crate::request;
-use crate::request::Request;
+use crate::server::request::Request;
+use crate::server::response;
 
 pub async fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
     let path = req.uri().path();
@@ -10,7 +10,7 @@ pub async fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
     let contents = ctx.global.statics.get(file);
 
     match contents {
-        Some(body) => request::send_async(body.clone()).await,
-        None => request::not_found(req, ctx).await
+        Some(body) => response::send_async(body.clone()).await,
+        None => response::not_found(req, ctx).await
     }
 }

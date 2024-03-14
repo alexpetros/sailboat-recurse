@@ -1,5 +1,5 @@
 use tokio_util::task::TaskTracker;
-use crate::request::global_context::GlobalContext;
+use crate::server::context::GlobalContext;
 use std::env;
 use std::sync::Arc;
 use std::net::SocketAddr;
@@ -8,7 +8,7 @@ use minijinja::path_loader;
 use tokio::signal;
 use crate::config::Config;
 use crate::router::router;
-use crate::request::Request;
+use server::request::Request;
 
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
@@ -19,7 +19,7 @@ use minijinja::Environment;
 
 mod config;
 mod router;
-mod request;
+mod server;
 mod static_files;
 mod sqlite;
 
