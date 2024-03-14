@@ -11,10 +11,9 @@ struct Post {
     content: String
 }
 
-pub async fn post(req: Request, _ctx: Context<'_>) -> ResponseResult {
+pub async fn post(req: Request, ctx: Context<'_>) -> ResponseResult {
     let req = req.get_body().await?;
-    let body = req.body().to_vec();
-    let text = String::from_utf8(body).unwrap();
+    let text = req.text()?;
     Ok(request::send(text))
 }
 

@@ -20,7 +20,8 @@ use http_body_util::BodyExt;
 pub enum ServerError {
     Hyper(hyper::Error),
     Sql(rusqlite::Error),
-    BodyTooLarge()
+    BodyTooLarge(),
+    BodyNotUtf8()
 }
 
 impl std::error::Error for ServerError {}
@@ -30,6 +31,7 @@ impl Display for ServerError {
             ServerError::Hyper(ref err) => write!(f, "[HYPER ERROR] {}", err),
             ServerError::Sql(ref err) => write!(f, "[SQL ERROR] {}", err),
             ServerError::BodyTooLarge() => write!(f, "Body Too Large Error"),
+            ServerError::BodyNotUtf8() => write!(f, "Body was expected to be UT8, and it wasn't"),
         }
     }
 }
@@ -88,9 +90,11 @@ impl Deref for FullRequest {
     }
 }
 
-
-
-impl Request {
+impl FullRequest {
+    pub fn text (&self) -> Result<String, ServerError> {
+        let body = self.body().to_vec();
+        String::from_utf8(body).map_err(|_| { ServerError::BodyNotUtf8() })
+    }
 }
 
 pub type ResponseResult = std::result::Result<Response<BoxBody<Bytes, hyper::Error>>, ServerError>;
