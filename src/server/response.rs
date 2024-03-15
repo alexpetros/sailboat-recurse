@@ -23,12 +23,7 @@ pub fn send<T: Into<Bytes>>(body: T) -> Response<BoxBody<hyper::body::Bytes, hyp
     Response::new(full(body))
 }
 
-pub async fn send_async<T: Into<Bytes>>(body: T) -> ResponseResult {
-    Ok(send(body))
-}
-
-
-pub async fn not_found(_req: Request, ctx: Context<'_>) -> ResponseResult {
+pub fn not_found(_req: Request, ctx: Context<'_>) -> ResponseResult {
     let page = ctx.render("404.html", context! {});
     let mut res = send(page);
     *res.status_mut() = StatusCode::NOT_FOUND;

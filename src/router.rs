@@ -8,17 +8,12 @@ use crate::server::context::Context;
 use crate::server::response::ResponseResult;
 use crate::sqlite::get_conn;
 use std::sync::Arc;
-use hyper::Method;
 use tracing::debug;
-use tracing::warn;
+use tracing::error;
 
 use crate::server::request::Request;
 use crate::server::context::GlobalContext;
 use crate::server::response;
-
-const GET: &Method = &Method::GET;
-const POST: &Method = &Method::POST;
-const DELETE: &Method = &Method::DELETE;
 
 pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
     let method = req.method();
@@ -36,19 +31,20 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
         return serve_static::get(req, ctx).await;
     }
 
-    let result = match (method, path) {
-        (GET, "/healthcheck") => healthcheck::get(req, ctx),
-        (GET, "/debug") => debug::get(req, ctx),
-        (GET, "/") => index::get(req, ctx),
-        (POST, "/post") => post::post(req, ctx).await,
-        (DELETE, "/post") => post::post(req, ctx).await,
+    let sub_route = path.split("/").nth(1);
+
+    let result = match sub_route {
+        None => index::router(req, ctx),
+        Some("/post") => post::router(req, ctx).await,
+        Some("/debug") => debug::router(req, ctx),
+        Some("/healthcheck") => healthcheck::router(req, ctx),
 
         // Return 404 if the request is not known
-        _ => response::not_found(req, ctx).await
+        _ => response::not_found(req, ctx)
     };
 
     if let Err(error) = result {
-        warn!("{}", error);
+        error!("{}", error);
         response::server_error(g_ctx)
     } else {
         result

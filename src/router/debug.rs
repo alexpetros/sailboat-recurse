@@ -1,10 +1,11 @@
 use crate::server::context::Context;
-use crate::server::request::Request;
+use crate::server::request::{GET, Request};
 use crate::server::response;
-use crate::server::response::ResponseResult;
+use crate::server::response::{not_found, ResponseResult};
 
-pub fn get(_req: Request, ctx: Context<'_>) -> ResponseResult {
+pub fn router (req: Request, ctx: Context<'_>) -> ResponseResult {
+    if req.method() != GET { return not_found(req, ctx) }
+
     let body = ctx.global.startup_time.to_string();
     Ok(response::send(body))
 }
-

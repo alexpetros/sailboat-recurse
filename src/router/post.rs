@@ -1,6 +1,8 @@
 use serde::Deserialize;
 use serde::Serialize;
+use request::POST;
 use crate::server::context::Context;
+use crate::server::{request, response};
 use crate::server::request::Request;
 use crate::server::response::{ResponseResult, send};
 
@@ -15,11 +17,18 @@ struct Post {
 struct PostForm {
     content: String
 }
+pub async fn router (req: Request, ctx: Context<'_>) -> ResponseResult {
+    match req.method() {
+        POST => post(req, ctx).await,
+        _ => response::not_found(req, ctx)
+    }
+}
 
 const AUTHOR_NAME: &str = "Alex Petros";
 const AUTHOR_HANDLE: &str = "awp@example.com";
 
-pub async fn post(req: Request, ctx: Context<'_>) -> ResponseResult {
+async fn
+post(req: Request, ctx: Context<'_>) -> ResponseResult {
     let req = req.get_body().await?;
     let text = req.text()?;
     let form: PostForm = serde_html_form::from_str(&text).unwrap();
