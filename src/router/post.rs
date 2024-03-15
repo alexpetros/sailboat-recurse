@@ -1,3 +1,5 @@
+use minijinja::context;
+use crate::queries::feed::get_posts_in_feed;
 use tracing::log::debug;
 use crate::server::error::ServerError;
 use serde::Deserialize;
@@ -40,7 +42,9 @@ post(req: Request, ctx: Context<'_>) -> ResponseResult {
         (&AUTHOR_NAME, &AUTHOR_HANDLE, &form.content)
     )?;
 
-    Ok(send("".to_owned()))
+    let posts = get_posts_in_feed(&ctx)?;
+    let body = ctx.render_block("index.html", "feed", context! { posts });
+    Ok(send(body))
 }
 
 pub fn delete(req: Request, ctx: Context<'_>) -> ResponseResult {

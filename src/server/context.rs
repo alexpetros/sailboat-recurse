@@ -31,6 +31,15 @@ impl <'a>GlobalContext<'a> {
         tmpl.render(context).unwrap().into_bytes()
     }
 
+    pub fn render_block(&self, path: &str, block_name: &str, local_values: Value) -> Vec<u8> {
+        let tmpl = self.env.get_template(path).unwrap();
+        let global_values = context! {
+            env => ENV
+        };
+        let context = context! { ..local_values, ..global_values };
+        let rv = tmpl.eval_to_state(context).unwrap().render_block(block_name).unwrap().into_bytes();
+        rv
+    }
 }
 
 pub struct Context<'a> {
@@ -41,6 +50,10 @@ pub struct Context<'a> {
 impl<'a> Context<'a> {
     pub fn render(&self, path: &str, local_values: Value) -> Vec<u8> {
         self.global.render(path, local_values)
+    }
+
+    pub fn render_block(&self, path: &str, block_name: &str, local_values: Value) -> Vec<u8> {
+        self.global.render_block(path, block_name, local_values)
     }
 }
 

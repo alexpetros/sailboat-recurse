@@ -29,14 +29,20 @@ button.delete {
 
   <h1>{{ name }}'s Sailboat</h1>
 
-  <section class=feed>
+  <section class=newpost>
   <h2>Create</h2>
-  <form action="/post" method=post>
+  <form action="/post"
+        method=post
+        hx-post="/post"
+        hx-swap=outerHTML
+        hx-target="section.feed"
+        hx-on::after-request="this.reset()">
     <textarea name="content" placeholder="{{name}} is..."></textarea>
     <div><button>Post!</button></div>
   </form>
   </section>
 
+  {% block feed %}
   <section class=feed>
   <h2>Feed</h2>
   {% for post in posts %}
@@ -52,9 +58,9 @@ button.delete {
   </article>
   {% endfor %}
   </section>
+  {% endblock %}
 
 </main>
-
 {% endblock %}
 
 <!-- <section> -->
