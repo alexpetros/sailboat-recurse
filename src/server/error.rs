@@ -1,42 +1,72 @@
 use std::fmt::Display;
 
+use hyper::StatusCode;
+
 #[derive(Debug)]
-pub enum ServerError {
-    Hyper(hyper::Error),
-    Sql(rusqlite::Error),
-    BadRequest(String),
-    BodyTooLarge(),
-    BodyNotUtf8(),
+pub struct ServerError {
+    pub prefix: &'static str,
+    pub message: String,
+    pub status_code: StatusCode
 }
 
 impl std::error::Error for ServerError {}
 
 impl Display for ServerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match *self {
-            ServerError::Hyper(ref err) => write!(f, "[HYPER ERROR] {}", err),
-            ServerError::Sql(ref err) => write!(f, "[SQL ERROR] {}", err),
-            ServerError::BadRequest(ref s) => write!(f, "[BAD REQUEST ERROR] {}", s),
-            ServerError::BodyTooLarge() => write!(f, "Body Too Large Error"),
-            ServerError::BodyNotUtf8() => write!(f, "Body was expected to be UT8, and it wasn't"),
-        }
+        write!(f, "{} {}", self.prefix, self.message)
     }
 }
 
 impl From<rusqlite::Error> for ServerError {
     fn from(err: rusqlite::Error) -> Self {
-        ServerError::Sql(err)
+        ServerError {
+            prefix: "[SQL ERROR]",
+            message: err.to_string(),
+            status_code: StatusCode::INTERNAL_SERVER_ERROR
+        }
     }
 }
 
 impl From<hyper::Error> for ServerError {
     fn from(err: hyper::Error) -> Self {
-        ServerError::Hyper(err)
+        ServerError {
+            prefix: "[HYPER ERROR]",
+            message: err.to_string(),
+            status_code: StatusCode::INTERNAL_SERVER_ERROR
+        }
     }
 }
 
 impl From<serde_html_form::de::Error> for ServerError {
     fn from(err: serde_html_form::de::Error) -> Self {
-        ServerError::BadRequest(err.to_string())
+        ServerError {
+            prefix: "[BAD REQUEST]",
+            message: err.to_string(),
+            status_code: StatusCode::BAD_REQUEST
+        }
+    }
+}
+
+pub fn bad_request(message: &str) -> ServerError {
+    ServerError {
+        prefix: "[BAD REQUEST]",
+        message: message.to_owned(),
+        status_code: StatusCode::BAD_REQUEST
+    }
+}
+
+pub fn body_too_large() -> ServerError {
+    ServerError {
+        prefix: "",
+        message: "Body was too large".to_string(),
+        status_code: StatusCode::BAD_REQUEST
+    }
+}
+
+pub fn body_not_utf8() -> ServerError {
+    ServerError {
+        prefix: "",
+        message: "Body was not UTF8".to_string(),
+        status_code: StatusCode::BAD_REQUEST
     }
 }

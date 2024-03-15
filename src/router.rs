@@ -4,12 +4,14 @@ mod debug;
 mod serve_static;
 mod healthcheck;
 
+use hyper::StatusCode;
 use crate::server::context::Context;
 use crate::server::response::ResponseResult;
 use crate::sqlite::get_conn;
 use std::sync::Arc;
 use hyper::Method;
 use tracing::debug;
+use tracing::warn;
 use tracing::error;
 
 use crate::server::request::Request;
@@ -60,8 +62,12 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
     // };
 
     if let Err(error) = result {
-        error!("{}", error);
-        response::server_error(g_ctx)
+        if error.status_code == StatusCode::INTERNAL_SERVER_ERROR {
+            error!("{}", error);
+        } else {
+            warn!("{}", error);
+        }
+        response::send_status(error.status_code)
     } else {
         result
     }

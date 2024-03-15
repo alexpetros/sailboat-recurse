@@ -11,7 +11,7 @@ use crate::server::error::ServerError;
 pub type ResponseResult = std::result::Result<Response<BoxBody<Bytes, hyper::Error>>, ServerError>;
 
 
-fn _empty() -> BoxBody<Bytes, hyper::Error> {
+fn empty() -> BoxBody<Bytes, hyper::Error> {
     Empty::<Bytes>::new().map_err(|never| match never {}).boxed()
 }
 
@@ -23,6 +23,12 @@ pub fn send<T: Into<Bytes>>(body: T) -> Response<BoxBody<hyper::body::Bytes, hyp
     Response::new(full(body))
 }
 
+pub fn send_status(status: StatusCode) -> ResponseResult {
+    let mut res = Response::new(empty());
+    *res.status_mut() = status;
+    Ok(res)
+}
+
 pub fn not_found(_req: Request, ctx: Context<'_>) -> ResponseResult {
     let page = ctx.render("404.html", context! {});
     let mut res = send(page);
@@ -30,7 +36,7 @@ pub fn not_found(_req: Request, ctx: Context<'_>) -> ResponseResult {
     Ok(res)
 }
 
-pub fn server_error(g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
+pub fn _server_error(g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
     let page = g_ctx.render("500.html", context! {});
     let mut res = send(page);
     *res.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;

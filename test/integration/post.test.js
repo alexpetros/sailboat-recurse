@@ -16,15 +16,13 @@ describe('/post', async () => {
   it('rejects posts without a feed_id', async () => {
     const body = 'content=posting%20new%20content'
     const res = await fetch(`${SAILBOAT_URL}/post`, { body, method: 'POST' })
-    // TODO change to 400
-    assert.equal(res.status, 500)
+    assert.equal(res.status, 400)
   })
 
   it('rejects posts without content', async () => {
     const body = 'feed_id=1'
     const res = await fetch(`${SAILBOAT_URL}/post`, { body, method: 'POST' })
-    // TODO change to 400
-    assert.equal(res.status, 500)
+    assert.equal(res.status, 400)
   })
 
 })
