@@ -39,11 +39,11 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
     let subroutes: Vec<&str> = path.split("/").collect();
 
     let result = match (method, &subroutes[1..]) {
-        (GET, []) => index::get(req, ctx),
+        (GET, [""]) => index::get(req, ctx),
         (GET, ["debug"]) => debug::get(req, ctx),
 
         (POST, ["post"]) => post::post(req, ctx).await,
-        (DELETE, ["post"]) => post::delete(req, ctx),
+        (DELETE, ["post", ..]) => post::delete(req, ctx),
 
         (GET, ["healthcheck"]) => healthcheck::get(req, ctx),
         _ => response::not_found(req, ctx)
