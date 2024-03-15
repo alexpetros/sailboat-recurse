@@ -1,11 +1,28 @@
 CREATE TABLE posts (
   post_id INTEGER PRIMARY KEY,
-  author_name TEXT,
-  author_handle TEXT,
-  content TEXT
-);
+  feed_id INTEGER NOT NULL REFERENCES feeds ON DELETE CASCADE ON UPDATE CASCADE,
+  content TEXT,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch())
+) STRICT;
 
-INSERT INTO posts (author_name, author_handle, content)
-VALUES
-('Alex', 'awp@exmaple.com', 'This is my first sailboat post!')
+CREATE TABLE feeds (
+  feed_id INTEGER PRIMARY KEY,
+  feed_name TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  handle TEXT NOT NULL
+) STRICT;
+
+CREATE TABLE globals (
+  key TEXT NOT NULL,
+  value TEXT NOT NULL
+) STRICT;
+
+INSERT INTO globals (key, value) VALUES
+('domain', 'example.com');
+
+INSERT INTO feeds (feed_name, display_name, handle)
+VALUES ('Thoughts', 'Alex Petros', 'thoughts');
+
+INSERT INTO posts (feed_id, content)
+VALUES (1, 'This is my first sailboat post!')
 ;

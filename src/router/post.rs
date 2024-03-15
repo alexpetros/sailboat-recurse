@@ -19,6 +19,7 @@ struct Post {
 
 #[derive(Debug, Deserialize)]
 struct PostForm {
+    feed_id: String,
     content: String
 }
 pub async fn router (req: Request, ctx: Context<'_>) -> ResponseResult {
@@ -29,17 +30,14 @@ pub async fn router (req: Request, ctx: Context<'_>) -> ResponseResult {
     }
 }
 
-const AUTHOR_NAME: &str = "Alex Petros";
-const AUTHOR_HANDLE: &str = "awp@example.com";
-
-async fn
-post(req: Request, ctx: Context<'_>) -> ResponseResult {
+async fn post(req: Request, ctx: Context<'_>) -> ResponseResult {
     let req = req.get_body().await?;
     let text = req.text()?;
     let form: PostForm = serde_html_form::from_str(&text).unwrap();
+    let feed_id: i64 = form.feed_id.parse().map_err(|_| { ServerError::BodyNotUtf8() })?;
     ctx.db.execute(
-        "INSERT INTO posts (author_name, author_handle, content) VALUES (?1, ?2, ?3)",
-        (&AUTHOR_NAME, &AUTHOR_HANDLE, &form.content)
+        "INSERT INTO posts (feed_id, content) VALUES (?1, ?2)",
+        (&feed_id, &form.content)
     )?;
 
     let posts = get_posts_in_feed(&ctx)?;

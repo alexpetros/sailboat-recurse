@@ -12,6 +12,7 @@ pub fn router(req: Request, ctx: Context<'_>) -> ResponseResult {
 
     let context = context! {
         posts,
+        feed_id => "1",
         name => "Alex",
         bio => "Rigging my sailboat"
     };

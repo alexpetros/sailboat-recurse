@@ -37,6 +37,7 @@ button.delete {
         hx-swap=outerHTML
         hx-target="section.feed"
         hx-on::after-request="this.reset()">
+    <input type=hidden name=feed_id value="{{ feed_id }}">
     <textarea name="content" placeholder="{{name}} is..."></textarea>
     <div><button>Post!</button></div>
   </form>
@@ -49,8 +50,8 @@ button.delete {
   <article class=post>
     <div class=userinfo>
       <address>
-        <span class=user>{{ post.author_name }}</span> -
-        <span class=handle>{{ post.author_handle }}</span>
+        <span class=user>{{ post.display_name }}</span> -
+        <span class=handle>{{ post.handle }}</span>
       </address>
       <button class=delete
               hx-delete="/post/{{ post.post_id }}"
