@@ -4,9 +4,7 @@ use tracing::log::debug;
 use crate::server::error::ServerError;
 use serde::Deserialize;
 use serde::Serialize;
-use request::{DELETE, POST};
 use crate::server::context::Context;
-use crate::server::{request, response};
 use crate::server::request::Request;
 use crate::server::response::{ResponseResult, send};
 
@@ -22,15 +20,8 @@ struct PostForm {
     feed_id: String,
     content: String
 }
-pub async fn router (req: Request, ctx: Context<'_>) -> ResponseResult {
-    match (req.method(), req.uri().path()) {
-        (POST, "/post") => post(req, ctx).await,
-        (DELETE, _) => delete(req, ctx),
-        _ => response::not_found(req, ctx)
-    }
-}
 
-async fn post(req: Request, ctx: Context<'_>) -> ResponseResult {
+pub async fn post(req: Request, ctx: Context<'_>) -> ResponseResult {
     let req = req.get_body().await?;
     let text = req.text()?;
     let form: PostForm = serde_html_form::from_str(&text).unwrap();
