@@ -5,7 +5,8 @@ pub enum ServerError {
     Hyper(hyper::Error),
     Sql(rusqlite::Error),
     BodyTooLarge(),
-    BodyNotUtf8()
+    BodyNotUtf8(),
+    BadRequest(String)
 }
 
 impl std::error::Error for ServerError {}
@@ -17,6 +18,7 @@ impl Display for ServerError {
             ServerError::Sql(ref err) => write!(f, "[SQL ERROR] {}", err),
             ServerError::BodyTooLarge() => write!(f, "Body Too Large Error"),
             ServerError::BodyNotUtf8() => write!(f, "Body was expected to be UT8, and it wasn't"),
+            ServerError::BadRequest(ref s) => write!(f, "{}", s),
         }
     }
 }

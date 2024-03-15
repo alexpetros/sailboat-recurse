@@ -9,7 +9,7 @@ pub struct Request(pub hyper::Request<Incoming>);
 
 pub const GET: &Method = &Method::GET;
 pub const POST: &Method = &Method::POST;
-// pub const DELETE: &Method = &Method::DELETE;
+pub const DELETE: &Method = &Method::DELETE;
 
 impl From<hyper::Request<Incoming>> for Request {
     fn from(req: hyper::Request<Incoming>) -> Self {

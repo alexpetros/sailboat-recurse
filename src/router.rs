@@ -34,10 +34,10 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
     let sub_route = path.split("/").nth(1);
 
     let result = match sub_route {
-        None => index::router(req, ctx),
-        Some("/post") => post::router(req, ctx).await,
-        Some("/debug") => debug::router(req, ctx),
-        Some("/healthcheck") => healthcheck::router(req, ctx),
+        Some("") => index::router(req, ctx),
+        Some("post") => post::router(req, ctx).await,
+        Some("debug") => debug::router(req, ctx),
+        Some("healthcheck") => healthcheck::router(req, ctx),
 
         // Return 404 if the request is not known
         _ => response::not_found(req, ctx)

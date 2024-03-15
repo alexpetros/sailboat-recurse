@@ -1,6 +1,8 @@
+use tracing::log::debug;
+use crate::server::error::ServerError;
 use serde::Deserialize;
 use serde::Serialize;
-use request::POST;
+use request::{DELETE, POST};
 use crate::server::context::Context;
 use crate::server::{request, response};
 use crate::server::request::Request;
@@ -18,8 +20,9 @@ struct PostForm {
     content: String
 }
 pub async fn router (req: Request, ctx: Context<'_>) -> ResponseResult {
-    match req.method() {
-        POST => post(req, ctx).await,
+    match (req.method(), req.uri().path()) {
+        (POST, "/post") => post(req, ctx).await,
+        (DELETE, _) => delete(req, ctx),
         _ => response::not_found(req, ctx)
     }
 }
@@ -40,5 +43,12 @@ post(req: Request, ctx: Context<'_>) -> ResponseResult {
     Ok(send("".to_owned()))
 }
 
-// pub async fn delete(req: Request, ctx: Context<'_>) -> ResponseResult {
-// }
+pub fn delete(req: Request, ctx: Context<'_>) -> ResponseResult {
+    let post_param = req.uri().path().split("/")
+        .nth(2)
+        .ok_or(ServerError::BadRequest("Missing ID".to_owned()))?;
+
+    debug!("Deleting post {}", post_param);
+    ctx.db.execute("DELETE FROM posts WHERE post_id = ?1", [ post_param ])?;
+    Ok(send("".to_owned()))
+}
