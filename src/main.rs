@@ -31,6 +31,7 @@ async fn main() {
     let port = config.port;
     let tracker = Arc::new(TaskTracker::new());
 
+    // TODO this does not properly crash on startup if it can't bind a port
     tokio::task::spawn(run_server(port, tracker.clone()));
 
     // TODO upgrade this to handle interrupts

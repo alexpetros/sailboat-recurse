@@ -52,7 +52,13 @@ button.delete {
         <span class=user>{{ post.author_name }}</span> -
         <span class=handle>{{ post.author_handle }}</span>
       </address>
-      <button hx-delete="/post/{{ post.post_id }}" hx-target="closest article" hx-swap="outerHTML" class=delete>Delete</button>
+      <button class=delete
+              hx-delete="/post/{{ post.post_id }}"
+              hx-target="closest article"
+              hx-swap="outerHTML"
+              hx-confirm="Are you sure you want to delete this post?"
+              >Delete
+      </button>
     </div>
     <p>{{ post.content }}</p>
   </article>
@@ -62,20 +68,3 @@ button.delete {
 
 </main>
 {% endblock %}
-
-<!-- <section> -->
-<!--   <h2>Profile</h2> -->
-<!--   <dl> -->
-<!--     <dt>Name:</dt><dd class=name>{{ name }}</dd> -->
-<!--     <dt>Bio:</dt><dd class=bio>{{ bio }}</dd> -->
-<!--   </dl> -->
-<!-- </section> -->
-
-<!-- <section> -->
-<!--   <h2>Feeds</h2> -->
-<!--   <ul> -->
-<!--     <li>Blog -->
-<!--     <li>Tweets -->
-<!--     <li>Photos -->
-<!--   </ul> -->
-<!-- </section> -->
