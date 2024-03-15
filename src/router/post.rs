@@ -24,7 +24,7 @@ struct PostForm {
 pub async fn post(req: Request, ctx: Context<'_>) -> ResponseResult {
     let req = req.get_body().await?;
     let text = req.text()?;
-    let form: PostForm = serde_html_form::from_str(&text).unwrap();
+    let form: PostForm = serde_html_form::from_str(&text)?;
     let feed_id: i64 = form.feed_id.parse().map_err(|_| { ServerError::BodyNotUtf8() })?;
     ctx.db.execute(
         "INSERT INTO posts (feed_id, content) VALUES (?1, ?2)",

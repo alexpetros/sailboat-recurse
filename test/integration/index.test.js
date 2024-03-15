@@ -2,9 +2,9 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { SAILBOAT_URL } from './setup.js'
 
-describe('Hello world test', async () => {
+describe('/index', async () => {
 
-  it('shows "Hello World!"', async () => {
+  it('Show the homepage and a feed element', async () => {
     const res = await fetch(`${SAILBOAT_URL}`)
     const body = await res.text()
     assert.match(body, /<h1>/)
