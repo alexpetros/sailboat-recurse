@@ -23,6 +23,7 @@ mod server;
 mod static_files;
 mod sqlite;
 mod queries;
+mod activitypub;
 
 
 #[tokio::main]

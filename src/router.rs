@@ -3,7 +3,9 @@ mod post;
 mod debug;
 mod serve_static;
 mod healthcheck;
+mod well_known;
 
+use crate::router::well_known::webfinger;
 use hyper::StatusCode;
 use crate::server::context::Context;
 use crate::server::response::ResponseResult;
@@ -38,7 +40,14 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
         return serve_static::get(req, ctx).await;
     }
 
-    let subroutes: Vec<&str> = path.split("/").collect();
+    // Remove the query parameter for routing purposes
+    let without_query = match path.split_once("?") {
+        None => path,
+        Some(x) => x.0
+    };
+
+    // Split into subroutes
+    let subroutes: Vec<&str> = without_query.split("/").collect();
 
     let result = match (method, &subroutes[1..]) {
         (GET, [""]) => index::get(req, ctx),
@@ -47,19 +56,11 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
         (POST, ["post"]) => post::post(req, ctx).await,
         (DELETE, ["post", ..]) => post::delete(req, ctx),
 
+        (GET, [".well_known", "webfinger"]) => webfinger::get(req, ctx).await,
+
         (GET, ["healthcheck"]) => healthcheck::get(req, ctx),
         _ => response::not_found(req, ctx)
     };
-
-    // let result = match sub_route {
-    //     Some("") => index::get(req, ctx),
-    //     Some("post") => post::router(req, ctx).await,
-    //     Some("debug") => debug::router(req, ctx),
-    //     Some("healthcheck") => healthcheck::router(req, ctx),
-    //
-    //     // Return 404 if the request is not known
-    //     _ => response::not_found(req, ctx)
-    // };
 
     if let Err(error) = result {
         if error.status_code == StatusCode::INTERNAL_SERVER_ERROR {
