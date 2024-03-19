@@ -22,10 +22,10 @@ pub struct PublicKey {
 }
 
 impl PublicKey {
-    pub fn new () -> PublicKey {
+    pub fn new (id: &str) -> PublicKey {
         PublicKey {
-            id: "".to_owned(),
-            owner: "".to_owned(),
+            id: format!("{}#main-key", id),
+            owner: id.to_owned(),
             public_key_pem: "".to_owned()
         }
     }

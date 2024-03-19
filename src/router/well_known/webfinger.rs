@@ -28,10 +28,10 @@ pub async fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
 
     let ( search_type, identifier ) = resource
         .split_once(":")
-        .ok_or_else(|| { bad_request("Invalid resource query provided") })?;
+        .ok_or_else(|| { bad_request("Invalid resource query provided (missing scheme i.e. 'acc:')") })?;
 
     if search_type != "acc" {
-        return Err(bad_request("Sorry, that type of resource is not supported yet"));
+        return Err(bad_request("Sorry, that scheme is not supported yet (expected 'acc:')"));
     }
 
     let ( handle, domain ) = identifier

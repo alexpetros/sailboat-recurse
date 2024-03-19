@@ -47,11 +47,11 @@ pub fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
     context.push(activitypub::Context::SecurityV1);
     let actor = Actor {
         context,
-        id,
+        id: id.to_owned(),
         actor_type: activitypub::ActorType::Person,
         preferred_username: feed.handle,
         inbox,
-        public_key: activitypub::PublicKey::new()
+        public_key: activitypub::PublicKey::new(&id)
     };
 
     let body = json!(actor).to_string();
