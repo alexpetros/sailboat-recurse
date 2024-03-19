@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Sailboat</title>
+{% endblock %}
+
+{% block main %}
+<style>
+textarea[name=content] {
+  width: 100%;
+  max-width: 400px;
+  resize: vertical;
+}
+
+.post {
+  padding: 5px 5px;
+}
+
+.userinfo {
+  display: flex;
+  justify-content: space-between;
+}
+button.delete {
+  display: block;
+}
+</style>
+
+<main class=feed>
+
+  <h1>{{ name }}'s Sailboat</h1>
+
+  <section class=newpost>
+  <h2>Create</h2>
+  <form action="/post"
+        method=post
+        hx-post="/post"
+        hx-swap=outerHTML
+        hx-target="section.feed"
+        hx-on::after-request="this.reset()">
+    <input type=hidden name=feed_id value="{{ feed_id }}">
+    <textarea name="content" placeholder="{{name}} is..."></textarea>
+    <div><button>Post!</button></div>
+  </form>
+  </section>
+
+  {% block feed %}
+  <section class=feed>
+  <h2>Feed</h2>
+  {% for post in posts %}
+  <article class=post>
+    <div class=userinfo>
+      <address>
+        <span class=user>{{ post.display_name }}</span> -
+        <span class=handle>{{ post.handle }}</span>
+      </address>
+      <button class=delete
+              hx-delete="/post/{{ post.post_id }}"
+              hx-target="closest article"
+              hx-swap="outerHTML"
+              hx-confirm="Are you sure you want to delete this post?"
+              >Delete
+      </button>
+    </div>
+    <p>{{ post.content }}</p>
+  </article>
+  {% endfor %}
+  </section>
+  {% endblock %}
+
+</main>
+{% endblock %}
+

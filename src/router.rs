@@ -34,7 +34,8 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
     }
 
     let db = get_conn("./sailboat.db")?;
-    let ctx = Context { global: g_ctx.clone(), db };
+
+    let ctx = Context::new(&g_ctx, db)?;
 
     // Serve static files separately
     if path.starts_with("/static") {
@@ -50,11 +51,13 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
     // Split into subroutes
     let subroutes: Vec<&str> = without_query.split("/").collect();
 
-    let result = match (method, &subroutes[1..]) {
+    match (method, &subroutes[1..]) {
         (GET, [""]) => index::get(req, ctx),
         (GET, ["debug"]) => debug::get(req, ctx),
 
+        (GET, ["feeds", "new"]) => feeds::new::get(req, ctx),
         (GET, ["feeds", ..]) => feeds::get(req, ctx),
+        (POST, ["feeds"]) => feeds::post(req, ctx).await,
 
         (POST, ["posts"]) => posts::post(req, ctx).await,
         (DELETE, ["posts", ..]) => posts::delete(req, ctx),
@@ -63,8 +66,12 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
 
         (GET, ["healthcheck"]) => healthcheck::get(req, ctx),
         _ => response::not_found(req, ctx)
-    };
+    }
 
+}
+
+pub async fn serve(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
+    let result = router(req, g_ctx).await;
     if let Err(error) = result {
         if error.status_code == StatusCode::INTERNAL_SERVER_ERROR {
             error!("{}", error);
@@ -77,4 +84,3 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
         result
     }
 }
-

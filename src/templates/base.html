@@ -13,7 +13,11 @@
   <!-- {% endif %} -->
   <ul>
     <li><a href="/">Home</a></li>
-    <li><a href="/profile">Profile</a></li>
+    {% for feed in feeds %}
+      <li><a href="/feeds/{{ feed.feed_id }}">{{ feed.internal_name }}</a></li>
+    {% endfor %}
+    <li><a href="/feeds/new">+</a></li>
+    <!-- <li><a href="/profile">Profile</a></li> -->
   </ul>
 </nav>
 <main>

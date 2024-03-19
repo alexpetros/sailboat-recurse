@@ -7,7 +7,6 @@ use hyper::body;
 use minijinja::path_loader;
 use tokio::signal;
 use crate::config::Config;
-use crate::router::router;
 use server::request::Request;
 
 use hyper::server::conn::http1;
@@ -79,7 +78,7 @@ async fn run_server(port: u16, tracker: Arc<TaskTracker>) -> Result<(), Box<dyn 
 
         let shared_ctx = g_ctx.clone(); // Why is this necessary?
         let service = service_fn(move |req: hyper::Request<body::Incoming>| {
-            router(Request(req), shared_ctx.clone())
+            router::serve(Request(req), shared_ctx.clone())
         });
 
         // Spawn a tokio task to serve multiple connections concurrently

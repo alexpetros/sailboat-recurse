@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Sailboat</title>
+{% endblock %}
+
+{% block main %}
+<style>
+label {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  max-width: 500px;
+}
+
+</style>
+
+<main>
+  <h1>New Feed</h1>
+  <form action=/feeds method=POST>
+    <label>Handle: <span>@<input type=text name=handle></span></label>
+    <label>Display Name:<input type=text name=display_name></label>
+    <label>Nickname: <input type=text name=internal_name></label>
+    <button>Create</button>
+  </form>
+
+</main>
+{% endblock %}

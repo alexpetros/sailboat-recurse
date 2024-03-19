@@ -7,7 +7,7 @@ CREATE TABLE posts (
 
 CREATE TABLE feeds (
   feed_id INTEGER PRIMARY KEY,
-  feed_name TEXT NOT NULL,
+  internal_name TEXT NOT NULL,
   display_name TEXT NOT NULL,
   handle TEXT NOT NULL
 ) STRICT;
@@ -20,7 +20,7 @@ CREATE TABLE globals (
 INSERT INTO globals (key, value) VALUES
 ('domain', 'example.com');
 
-INSERT INTO feeds (feed_name, display_name, handle)
+INSERT INTO feeds (internal_name, display_name, handle)
 VALUES ('Thoughts', 'Alex Petros', 'thoughts');
 
 INSERT INTO posts (feed_id, content)

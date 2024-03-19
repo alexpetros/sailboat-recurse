@@ -1,5 +1,5 @@
 use hyper::StatusCode;
-use crate::server::response::send_status;
+use crate::server::response::{redirect, send_status};
 use serde_json::json;
 use serde::Deserialize;
 use crate::activitypub::{self, Actor};
@@ -9,10 +9,19 @@ use crate::server::context::Context;
 use crate::server::request::Request;
 use crate::server::response::{ResponseResult, send};
 
+pub mod new;
+
 #[derive(Deserialize)]
 struct Feed {
     feed_id: i64,
     handle: String
+}
+
+#[derive(Deserialize)]
+struct NewFeed {
+    handle: String,
+    display_name: String,
+    internal_name: String
 }
 
 pub fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
@@ -58,3 +67,17 @@ pub fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
     Ok(send(body))
 }
 
+pub async fn post(req: Request, ctx: Context<'_>) -> ResponseResult {
+    let req = req.get_body().await?;
+    let text = req.text()?;
+    let form: NewFeed = serde_html_form::from_str(&text)?;
+    ctx.db.execute(
+        "INSERT INTO feeds (handle, display_name, internal_name) VALUES (?1, ?2, ?3)",
+        (&form.handle, &form.display_name, &form.internal_name)
+    )?;
+
+    let id = ctx.db.last_insert_rowid();
+    let path = format!("/feeds/{}", id);
+
+    redirect(&path)
+}
