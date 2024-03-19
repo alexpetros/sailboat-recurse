@@ -1,15 +1,16 @@
 body {
   display: flex;
   flex-direction: row;
-  padding-top: 20px;
+  margin: 0;
   max-width: 800px;
+  min-height: 100vh;
 }
 
 .site-nav {
   width: 100px;
   background-color: black;
   margin: 0 30px 0 0;
-  padding: 0;
+  padding: 20px 0 0 0;
 }
 
 .site-nav ul {
@@ -40,6 +41,7 @@ address {
 
 main {
   width: 100%;
+  padding-top: 20px;
 }
 
 h1 {

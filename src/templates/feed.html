@@ -24,38 +24,35 @@ button.delete {
   display: block;
 }
 </style>
+<h1>{{ feed.internal_name }}</h1>
 
-<main class=feed>
+<section class=newpost>
+<h2>Create</h2>
+<form action="/post"
+      method=post
+      hx-post="/post"
+      hx-swap=outerHTML
+      hx-target="section.feed"
+      hx-on::after-request="this.reset()">
+  <input type=hidden name=feed_id value="{{ feed.feed_id }}">
+  <textarea name="content" placeholder="{{ feed.display_name }} is..."></textarea>
+  <div><button>Post!</button></div>
+</form>
+</section>
 
-  <h1>{{ feed.internal_name }}</h1>
-
-  <section class=newpost>
-  <h2>Create</h2>
-  <form action="/post"
-        method=post
-        hx-post="/post"
-        hx-swap=outerHTML
-        hx-target="section.feed"
-        hx-on::after-request="this.reset()">
-    <input type=hidden name=feed_id value="{{ feed.feed_id }}">
-    <textarea name="content" placeholder="{{ feed.display_name }} is..."></textarea>
-    <div><button>Post!</button></div>
-  </form>
-  </section>
-
-  {% block feed %}
-  <section class=feed>
-  <h2>Feed</h2>
-  {% for post in posts %}
-  <article class=post>
-    <div class=userinfo>
-      <address>
-        <span class=user>{{ post.display_name }}</span> -
-        <span class=handle>{{ post.handle }}</span>
-      </address>
-      <button class=delete
-              hx-delete="/post/{{ post.post_id }}"
-              hx-target="closest article"
+{% block feed %}
+<section class=feed>
+<h2>Feed</h2>
+{% for post in posts %}
+<article class=post>
+  <div class=userinfo>
+    <address>
+      <span class=user>{{ post.display_name }}</span> -
+      <span class=handle>{{ post.handle }}</span>
+    </address>
+    <button class=delete
+            hx-delete="/post/{{ post.post_id }}"
+            hx-target="closest article"
               hx-swap="outerHTML"
               hx-confirm="Are you sure you want to delete this post?"
               >Delete
@@ -65,8 +62,7 @@ button.delete {
   </article>
   {% endfor %}
   </section>
-  {% endblock %}
+{% endblock %}
 
-</main>
 {% endblock %}
 

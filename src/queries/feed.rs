@@ -16,6 +16,7 @@ pub fn get_posts_in_feed (db: &Connection, feed_id: i64) -> Result<Vec<Post>, Se
          FROM posts
          LEFT JOIN feeds AS f USING (feed_id)
          WHERE feed_id = ?1
+         ORDER BY created_at ASC
          ")?;
     let rows = query.query_map([feed_id], |row| {
         let post = Post {
