@@ -33,7 +33,7 @@ pub async fn post(req: Request, ctx: Context<'_>) -> ResponseResult {
     )?;
 
     let posts = get_posts_in_feed(&ctx.db, feed_id)?;
-    let body = ctx.render_block("index.html", "feed", context! { posts });
+    let body = ctx.render_block("feed.html", "feed", context! { posts });
     Ok(send(body))
 }
 
