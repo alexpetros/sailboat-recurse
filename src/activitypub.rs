@@ -2,7 +2,7 @@ use serde::Serialize;
 use serde::Deserialize;
 
 #[derive(Debug, Serialize, Deserialize)]
-enum Context {
+pub enum Context {
     #[serde(rename = "https://www.w3.org/ns/activitystreams")]
     ActivityStreams,
     #[serde(rename = "https://w3id.org/security/v1")]
@@ -10,15 +10,25 @@ enum Context {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-enum ActorType {
+pub enum ActorType {
     Person
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct PublicKey {
+pub struct PublicKey {
     pub id: String,
     pub owner: String,
     pub public_key_pem: String
+}
+
+impl PublicKey {
+    pub fn new () -> PublicKey {
+        PublicKey {
+            id: "".to_owned(),
+            owner: "".to_owned(),
+            public_key_pem: "".to_owned()
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

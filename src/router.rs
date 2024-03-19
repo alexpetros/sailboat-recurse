@@ -1,5 +1,6 @@
 mod index;
-mod post;
+mod posts;
+mod feeds;
 mod debug;
 mod serve_static;
 mod healthcheck;
@@ -53,8 +54,10 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
         (GET, [""]) => index::get(req, ctx),
         (GET, ["debug"]) => debug::get(req, ctx),
 
-        (POST, ["post"]) => post::post(req, ctx).await,
-        (DELETE, ["post", ..]) => post::delete(req, ctx),
+        (GET, ["feeds", ..]) => feeds::get(req, ctx),
+
+        (POST, ["posts"]) => posts::post(req, ctx).await,
+        (DELETE, ["posts", ..]) => posts::delete(req, ctx),
 
         (GET, [".well-known", "webfinger"]) => webfinger::get(req, ctx).await,
 
