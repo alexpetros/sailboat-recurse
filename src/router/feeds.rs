@@ -1,5 +1,9 @@
+use serde::Serialize;
+use hyper::header::ACCEPT;
 use hyper::StatusCode;
-use crate::server::response::{redirect, send_status};
+use minijinja::context;
+use crate::queries::feed::get_posts_in_feed;
+use crate::server::response::{self, redirect, send_status};
 use serde_json::json;
 use serde::Deserialize;
 use crate::activitypub::{self, Actor};
@@ -11,10 +15,12 @@ use crate::server::response::{ResponseResult, send};
 
 pub mod new;
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct Feed {
     feed_id: i64,
-    handle: String
+    handle: String,
+    display_name: String,
+    internal_name: String
 }
 
 #[derive(Deserialize)]
@@ -24,6 +30,7 @@ struct NewFeed {
     internal_name: String
 }
 
+static PROFILE_ACCEPT_HEADER: &str = "application/ld+json;profile=“https://www.w3.org/ns/activitystreams";
 pub fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
     let feed_id = req.uri().path().split("/")
         .nth(2)
@@ -32,10 +39,12 @@ pub fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
         .map_err(|_| { bad_request("Invalid feed ID") })?;
 
     let feed = ctx.db
-        .query_row("SELECT feed_id, handle FROM feeds where feed_id = ?1", [ feed_id ], |row| {
+        .query_row("SELECT feed_id, handle, display_name, internal_name FROM feeds where feed_id = ?1", [ feed_id ], |row| {
             let feed = Feed {
                 feed_id: row.get(0)?,
-                handle: row.get(1)?
+                handle: row.get(1)?,
+                display_name: row.get(2)?,
+                internal_name: row.get(3)?,
             };
             Ok(feed)
         });
@@ -45,6 +54,49 @@ pub fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
         Err(_) => return send_status(StatusCode::NOT_FOUND)
     };
 
+
+    // If no request header was provided, serve the HTML feed
+    let request_header = req.headers().get(ACCEPT);
+
+    // If a valid request header was provided and contains the correct accept value,
+    // serve the JSON representation of the feed
+    // TODO actually parse the header properly
+    match request_header {
+        None => serve_html_feed(req, ctx, feed),
+        Some(h) => {
+            if h.to_str().unwrap_or("").contains(PROFILE_ACCEPT_HEADER) {
+                serve_json_feed(req, ctx, feed)
+            } else {
+                serve_html_feed(req, ctx, feed)
+            }
+        }
+    }
+
+}
+
+pub async fn post(req: Request, ctx: Context<'_>) -> ResponseResult {
+    let req = req.get_body().await?;
+    let text = req.text()?;
+    let form: NewFeed = serde_html_form::from_str(&text)?;
+    ctx.db.execute(
+        "INSERT INTO feeds (handle, display_name, internal_name) VALUES (?1, ?2, ?3)",
+        (&form.handle, &form.display_name, &form.internal_name)
+    )?;
+
+    let id = ctx.db.last_insert_rowid();
+    let path = format!("/feeds/{}", id);
+
+    redirect(&path)
+}
+
+fn serve_html_feed(_req: Request, ctx: Context<'_>, feed: Feed) -> ResponseResult {
+    let posts = get_posts_in_feed(&ctx.db, feed.feed_id)?;
+    let context = context! { feed => feed, posts => posts };
+    let body = ctx.render("feed.html", context);
+    Ok(response::send(body))
+}
+
+fn serve_json_feed(_req: Request, ctx: Context<'_>, feed: Feed) -> ResponseResult {
     let domain: String = ctx.db
         .query_row("SELECT value FROM globals WHERE key = 'domain'", (), |row| { row.get(0) })?;
 
@@ -65,19 +117,4 @@ pub fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
 
     let body = json!(actor).to_string();
     Ok(send(body))
-}
-
-pub async fn post(req: Request, ctx: Context<'_>) -> ResponseResult {
-    let req = req.get_body().await?;
-    let text = req.text()?;
-    let form: NewFeed = serde_html_form::from_str(&text)?;
-    ctx.db.execute(
-        "INSERT INTO feeds (handle, display_name, internal_name) VALUES (?1, ?2, ?3)",
-        (&form.handle, &form.display_name, &form.internal_name)
-    )?;
-
-    let id = ctx.db.last_insert_rowid();
-    let path = format!("/feeds/{}", id);
-
-    redirect(&path)
 }

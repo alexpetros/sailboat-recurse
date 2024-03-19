@@ -6,7 +6,7 @@ use crate::server::response;
 use crate::server::response::ResponseResult;
 
 pub fn get(_req: Request, ctx: Context<'_>) -> ResponseResult {
-    let posts = get_posts_in_feed(&ctx)?;
+    let posts = get_posts_in_feed(&ctx.db, 1)?;
 
     let context = context! {
         posts,

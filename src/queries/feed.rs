@@ -1,5 +1,5 @@
+use rusqlite::Connection;
 use serde::Serialize;
-use crate::server::context::Context;
 use crate::server::error::ServerError;
 
 #[derive(Debug, Serialize)]
@@ -10,13 +10,14 @@ pub struct Post {
     content: String
 }
 
-pub fn get_posts_in_feed (ctx: &Context<'_>) -> Result<Vec<Post>, ServerError> {
-    let mut query = ctx.db.prepare(
+pub fn get_posts_in_feed (db: &Connection, feed_id: i64) -> Result<Vec<Post>, ServerError> {
+    let mut query = db.prepare(
         "SELECT post_id, display_name, handle, content
          FROM posts
          LEFT JOIN feeds AS f USING (feed_id)
+         WHERE feed_id = ?1
          ")?;
-    let rows = query.query_map((), |row| {
+    let rows = query.query_map([feed_id], |row| {
         let post = Post {
             post_id: row.get(0)?,
             display_name: row.get(1)?,

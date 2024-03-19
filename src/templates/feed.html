@@ -27,7 +27,7 @@ button.delete {
 
 <main class=feed>
 
-  <h1>{{ name }}'s Sailboat</h1>
+  <h1>{{ feed.internal_name }}</h1>
 
   <section class=newpost>
   <h2>Create</h2>
@@ -37,8 +37,8 @@ button.delete {
         hx-swap=outerHTML
         hx-target="section.feed"
         hx-on::after-request="this.reset()">
-    <input type=hidden name=feed_id value="{{ feed_id }}">
-    <textarea name="content" placeholder="{{name}} is..."></textarea>
+    <input type=hidden name=feed_id value="{{ feed.feed_id }}">
+    <textarea name="content" placeholder="{{ feed.display_name }} is..."></textarea>
     <div><button>Post!</button></div>
   </form>
   </section>
