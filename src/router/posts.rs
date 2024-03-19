@@ -1,7 +1,7 @@
 use crate::server::error;
 use crate::server::error::body_not_utf8;
 use minijinja::context;
-use crate::queries::feed::get_posts_in_feed;
+use crate::queries::get_posts_in_feed;
 use tracing::log::debug;
 use serde::Deserialize;
 use serde::Serialize;

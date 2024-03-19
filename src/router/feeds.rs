@@ -2,7 +2,7 @@ use serde::Serialize;
 use hyper::header::ACCEPT;
 use hyper::StatusCode;
 use minijinja::context;
-use crate::queries::feed::get_posts_in_feed;
+use crate::queries::get_posts_in_feed;
 use crate::server::response::{self, redirect, send_status};
 use serde_json::json;
 use serde::Deserialize;
