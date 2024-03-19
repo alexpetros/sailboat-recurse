@@ -23,20 +23,47 @@ enum ActorType {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct PublicKey {
-    id: String,
-    owner: String,
-    public_key_pem: String
+    pub id: String,
+    pub owner: String,
+    pub public_key_pem: String
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Actor {
     #[serde(rename = "@context")]
-    context: Vec<Context>,
-    id: String,
-    actor_type: ActorType,
+    pub context: Vec<Context>,
+    pub id: String,
+    pub actor_type: ActorType,
     #[serde(rename = "preferredUsername")]
-    preferred_username: String,
-    inbox: String,
+    pub preferred_username: String,
+    pub inbox: String,
     #[serde(rename = "publicKey")]
-    public_key: PublicKey,
+    pub public_key: PublicKey,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum LinkType {
+    ActivityJson
+}
+
+impl LinkType {
+    fn as_str(&self) -> &'static str {
+        match self {
+            LinkType::ActivityJson => "application/activity+json"
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Link {
+    pub rel: String,
+    #[serde(rename = "type")]
+    pub link_type: LinkType,
+    pub href: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct WebFinger {
+    pub subject: String,
+    pub links: Vec<Link>,
 }
