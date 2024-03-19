@@ -56,7 +56,7 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
         (POST, ["post"]) => post::post(req, ctx).await,
         (DELETE, ["post", ..]) => post::delete(req, ctx),
 
-        (GET, [".well_known", "webfinger"]) => webfinger::get(req, ctx).await,
+        (GET, [".well-known", "webfinger"]) => webfinger::get(req, ctx).await,
 
         (GET, ["healthcheck"]) => healthcheck::get(req, ctx),
         _ => response::not_found(req, ctx)

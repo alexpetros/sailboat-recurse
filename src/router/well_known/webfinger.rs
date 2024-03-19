@@ -12,12 +12,7 @@ use crate::server::response::send_status;
 use crate::server::response::ResponseResult;
 
 #[derive(Debug, Deserialize)]
-struct Feed {
-    feed_id: i64,
-    feed_name: String,
-    display_name: String,
-    handle: String
-}
+struct Feed { feed_id: i64, }
 
 #[derive(Debug, Deserialize)]
 struct Query {
@@ -51,16 +46,11 @@ pub async fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
     }
 
     let feed = ctx.db.query_row("
-        SELECT feed_id, feed_name, display_name, handle
+        SELECT feed_id
         FROM feeds
         WHERE handle = ?1
     ", [ handle ], |row| {
-        let feed = Feed {
-            feed_id: row.get(0)?,
-            feed_name: row.get(1)?,
-            display_name: row.get(2)?,
-            handle: row.get(3)?,
-        };
+        let feed = Feed { feed_id: row.get(0)? };
         Ok(feed)
     });
 

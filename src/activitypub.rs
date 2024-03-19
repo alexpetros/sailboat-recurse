@@ -3,17 +3,10 @@ use serde::Deserialize;
 
 #[derive(Debug, Serialize, Deserialize)]
 enum Context {
+    #[serde(rename = "https://www.w3.org/ns/activitystreams")]
     ActivityStreams,
+    #[serde(rename = "https://w3id.org/security/v1")]
     SecurityV1
-}
-
-impl Context {
-    fn as_str(&self) -> &'static str {
-        match self {
-            Context::ActivityStreams => "https://www.w3.org/ns/activitystreams",
-            Context::SecurityV1 => "https://w3id.org/security/v1"
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -43,15 +36,8 @@ pub struct Actor {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum LinkType {
+    #[serde(rename = "application/activity+json")]
     ActivityJson
-}
-
-impl LinkType {
-    fn as_str(&self) -> &'static str {
-        match self {
-            LinkType::ActivityJson => "application/activity+json"
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
