@@ -1,3 +1,4 @@
+use openssl::pkey::PKey;
 use serde::Serialize;
 use serde::Deserialize;
 
@@ -22,11 +23,13 @@ pub struct PublicKey {
 }
 
 impl PublicKey {
-    pub fn new (id: &str) -> PublicKey {
+    pub fn new (id: &str, private_key_pem: &Vec<u8>) -> PublicKey {
+        let private_key_pem = PKey::private_key_from_pem(private_key_pem).unwrap();
+        let public_key_pem = private_key_pem.public_key_to_pem().unwrap();
         PublicKey {
             id: format!("{}#main-key", id),
             owner: id.to_owned(),
-            public_key_pem: "".to_owned()
+            public_key_pem: String::from_utf8(public_key_pem).unwrap()
         }
     }
 }

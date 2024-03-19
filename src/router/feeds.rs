@@ -1,3 +1,5 @@
+use openssl::pkey::PKey;
+use openssl::rsa::Rsa;
 use serde::Serialize;
 use hyper::header::ACCEPT;
 use hyper::StatusCode;
@@ -20,7 +22,8 @@ struct Feed {
     feed_id: i64,
     handle: String,
     display_name: String,
-    internal_name: String
+    internal_name: String,
+    private_key_pem: Vec<u8>
 }
 
 #[derive(Deserialize)]
@@ -30,7 +33,9 @@ struct NewFeed {
     internal_name: String
 }
 
-static PROFILE_ACCEPT_HEADER: &str = "application/ld+json;profile=“https://www.w3.org/ns/activitystreams";
+static LONG_ACCEPT_HEADER: &str = "application/ld+json;profile=“https://www.w3.org/ns/activitystreams";
+static SHORT_ACCEPT_HEADER: &str = "application/activity+json";
+
 pub fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
     let feed_id = req.uri().path().split("/")
         .nth(2)
@@ -39,12 +44,16 @@ pub fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
         .map_err(|_| { bad_request("Invalid feed ID") })?;
 
     let feed = ctx.db
-        .query_row("SELECT feed_id, handle, display_name, internal_name FROM feeds where feed_id = ?1", [ feed_id ], |row| {
+        .query_row("
+        SELECT feed_id, handle, display_name, internal_name, private_key_pem
+        FROM feeds where feed_id = ?1"
+        , [ feed_id ], |row| {
             let feed = Feed {
                 feed_id: row.get(0)?,
                 handle: row.get(1)?,
                 display_name: row.get(2)?,
                 internal_name: row.get(3)?,
+                private_key_pem: row.get(4)?
             };
             Ok(feed)
         });
@@ -64,23 +73,29 @@ pub fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
     match request_header {
         None => serve_html_feed(req, ctx, feed),
         Some(h) => {
-            if h.to_str().unwrap_or("").contains(PROFILE_ACCEPT_HEADER) {
+            let h = h.to_str().unwrap_or("");
+            if h.contains(LONG_ACCEPT_HEADER) || h.contains(SHORT_ACCEPT_HEADER){
                 serve_json_feed(req, ctx, feed)
             } else {
                 serve_html_feed(req, ctx, feed)
             }
         }
     }
-
 }
 
 pub async fn post(req: Request, ctx: Context<'_>) -> ResponseResult {
     let req = req.get_body().await?;
     let text = req.text()?;
     let form: NewFeed = serde_html_form::from_str(&text)?;
+
+    // TODO encrypt this
+    let rsa = Rsa::generate(2048).unwrap();
+    let pkey = PKey::from_rsa(rsa).unwrap().private_key_to_pem_pkcs8().unwrap();
+
     ctx.db.execute(
-        "INSERT INTO feeds (handle, display_name, internal_name) VALUES (?1, ?2, ?3)",
-        (&form.handle, &form.display_name, &form.internal_name)
+        "INSERT INTO feeds (handle, display_name, internal_name, private_key_pem)
+        VALUES (?1, ?2, ?3, ?4)",
+        (&form.handle, &form.display_name, &form.internal_name, &pkey)
     )?;
 
     let id = ctx.db.last_insert_rowid();
@@ -112,7 +127,7 @@ fn serve_json_feed(_req: Request, ctx: Context<'_>, feed: Feed) -> ResponseResul
         actor_type: activitypub::ActorType::Person,
         preferred_username: feed.handle,
         inbox,
-        public_key: activitypub::PublicKey::new(&id)
+        public_key: activitypub::PublicKey::new(&id, &feed.private_key_pem)
     };
 
     let body = json!(actor).to_string();
