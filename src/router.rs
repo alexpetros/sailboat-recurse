@@ -65,10 +65,11 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
     if let Err(error) = result {
         if error.status_code == StatusCode::INTERNAL_SERVER_ERROR {
             error!("{}", error);
+            response::send_status(error.status_code)
         } else {
             warn!("{}", error);
+            response::send_status_and_message(error)
         }
-        response::send_status(error.status_code)
     } else {
         result
     }

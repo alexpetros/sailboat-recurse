@@ -29,6 +29,12 @@ pub fn send_status(status: StatusCode) -> ResponseResult {
     Ok(res)
 }
 
+pub fn send_status_and_message(error: ServerError) -> ResponseResult {
+    let mut res = Response::new(full(error.message));
+    *res.status_mut() = error.status_code;
+    Ok(res)
+}
+
 pub fn not_found(_req: Request, ctx: Context<'_>) -> ResponseResult {
     let page = ctx.render("404.html", context! {});
     let mut res = send(page);

@@ -12,31 +12,74 @@ use crate::server::response::send_status;
 use crate::server::response::ResponseResult;
 
 #[derive(Debug, Deserialize)]
+struct Feed {
+    feed_id: i64,
+    feed_name: String,
+    display_name: String,
+    handle: String
+}
+
+#[derive(Debug, Deserialize)]
 struct Query {
     resource: String
 }
 
-pub async fn get(req: Request, _ctx: Context<'_>) -> ResponseResult {
+pub async fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
     let query = req.uri().query().ok_or(bad_request("Missing query parameter"))?;
 
-    let user = serde_html_form::from_str::<Query>(query)
-        .map(|q| { q.resource })?;
+    let resource = serde_html_form::from_str::<Query>(query)
+        .map(|q| { q.resource })
+        .map_err(|_| { bad_request("Invalid query string provided") })?;
 
-    if user != "acc:awp@example.com" {
-        return send_status(StatusCode::NOT_FOUND);
+    let ( search_type, identifier ) = resource
+        .split_once(":")
+        .ok_or_else(|| { bad_request("Invalid resource query provided") })?;
+
+    if search_type != "acc" {
+        return Err(bad_request("Sorry, that type of resource is not supported yet"));
     }
+
+    let ( handle, domain ) = identifier
+        .split_once("@")
+        .ok_or_else(|| { bad_request("Invalid handle resource provided") })?;
+
+    let db_domain: String = ctx.db
+        .query_row("SELECT value FROM globals WHERE key = 'domain'", (), |row| { row.get(0) })?;
+
+    if domain != db_domain {
+        return send_status(StatusCode::NOT_FOUND)
+    }
+
+    let feed = ctx.db.query_row("
+        SELECT feed_id, feed_name, display_name, handle
+        FROM feeds
+        WHERE handle = ?1
+    ", [ handle ], |row| {
+        let feed = Feed {
+            feed_id: row.get(0)?,
+            feed_name: row.get(1)?,
+            display_name: row.get(2)?,
+            handle: row.get(3)?,
+        };
+        Ok(feed)
+    });
+
+    let feed = match feed {
+        Ok(x) => x,
+        Err(_) => return send_status(StatusCode::NOT_FOUND)
+    };
 
     let self_link = Link {
         rel: "self".to_owned(),
         link_type: LinkType::ActivityJson,
-        href: "https://example.com/feeds/1".to_owned()
+        href: format!("https://example.com/feeds/{}", feed.feed_id)
     };
 
     let mut links = Vec::new();
     links.push(self_link);
 
     let actor = WebFinger {
-        subject: "acct:alex@example.com".to_owned(),
+        subject: format!("acc:{}@{}", handle, domain),
         links
     };
 
