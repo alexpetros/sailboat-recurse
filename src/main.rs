@@ -1,14 +1,15 @@
+use sqlite::initliaze_db;
 use tokio_util::task::TaskTracker;
 use crate::server::context::GlobalContext;
-use std::env;
+use std::{env, process};
 use std::sync::Arc;
 use std::net::SocketAddr;
 use hyper::body;
-use minijinja::path_loader;
 use tokio::signal;
 use crate::config::Config;
 use server::request::Request;
 
+use std::path::Path;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper_util::rt::TokioIo;
@@ -30,6 +31,16 @@ async fn main() {
     let config = Config::new(env::args().collect());
     let port = config.port;
     let tracker = Arc::new(TaskTracker::new());
+
+    // If db does not eixst, create it
+    // TODO eventually this needs to be done with some kind of admin/setup panel
+    let has_db = Path::new("./sailboat.db").exists();
+    if !has_db {
+        println!("No file for database found; creating one.");
+        initliaze_db("./sailboat.db").expect("Failed to startup database");
+    } else {
+        println!("Found database file, initializing");
+    }
 
     // TODO this does not properly crash on startup if it can't bind a port
     tokio::task::spawn(run_server(port, tracker.clone()));
@@ -57,7 +68,7 @@ async fn run_server(port: u16, tracker: Arc<TaskTracker>) -> Result<(), Box<dyn 
 
     // Setup template environment
     let mut env = Environment::new();
-    env.set_loader(path_loader("src/templates"));
+    minijinja_embed::load_templates!(&mut env);
     let env = Arc::new(env);
 
     // Load static files
@@ -66,7 +77,7 @@ async fn run_server(port: u16, tracker: Arc<TaskTracker>) -> Result<(), Box<dyn 
 
     let g_ctx = Arc::new(GlobalContext::new(env, statics));
 
-    let addr: SocketAddr = format!("127.0.0.1:{}", port).parse()?;
+    let addr: SocketAddr = format!("0.0.0.0:{}", port).parse()?;
     let listener = TcpListener::bind(addr).await?;
     info!("Now listening at http://localhost:{}", port);
 

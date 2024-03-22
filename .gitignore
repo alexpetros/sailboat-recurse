@@ -6,5 +6,9 @@
 *.db-shm
 *.db-wal
 
+# Deployment test stuff
+Dockerfile
+fly.toml
+
 # Editors files
 *.swp

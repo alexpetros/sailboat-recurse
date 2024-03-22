@@ -2,6 +2,8 @@ use openssl::pkey::PKey;
 use serde::Serialize;
 use serde::Deserialize;
 
+mod signature;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Context {
     #[serde(rename = "https://www.w3.org/ns/activitystreams")]
@@ -19,6 +21,7 @@ pub enum ActorType {
 pub struct PublicKey {
     pub id: String,
     pub owner: String,
+    #[serde(rename = "publicKeyPem")]
     pub public_key_pem: String
 }
 
@@ -29,7 +32,7 @@ impl PublicKey {
         PublicKey {
             id: format!("{}#main-key", id),
             owner: id.to_owned(),
-            public_key_pem: String::from_utf8(public_key_pem).unwrap()
+            public_key_pem: String::from_utf8(public_key_pem).unwrap().trim().to_owned()
         }
     }
 }
@@ -39,10 +42,13 @@ pub struct Actor {
     #[serde(rename = "@context")]
     pub context: Vec<Context>,
     pub id: String,
+    pub name: String,
+    #[serde(rename = "type")]
     pub actor_type: ActorType,
     #[serde(rename = "preferredUsername")]
     pub preferred_username: String,
     pub inbox: String,
+    pub outbox: String,
     #[serde(rename = "publicKey")]
     pub public_key: PublicKey,
 }

@@ -1,3 +1,5 @@
+use tracing::debug;
+use tracing::warn;
 use crate::server::response;
 use hyper::StatusCode;
 use serde::Deserialize;
@@ -28,15 +30,18 @@ pub async fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
 
     let ( search_type, identifier ) = resource
         .split_once(":")
-        .ok_or_else(|| { bad_request("Invalid resource query provided (missing scheme i.e. 'acc:')") })?;
+        .ok_or_else(|| { bad_request("Invalid resource query provided (missing scheme i.e. 'acct:')") })?;
 
-    if search_type != "acc" {
-        return Err(bad_request("Sorry, that scheme is not supported yet (expected 'acc:')"));
+    if search_type != "acct" {
+        warn!("Receieved search type: {}", search_type);
+        return Err(bad_request("Sorry, that scheme is not supported yet (expected 'acct:')"));
     }
 
     let ( handle, domain ) = identifier
         .split_once("@")
         .ok_or_else(|| { bad_request("Invalid handle resource provided") })?;
+
+    debug!("Searching for user {}", handle);
 
     let db_domain: String = ctx.db
         .query_row("SELECT value FROM globals WHERE key = 'domain'", (), |row| { row.get(0) })?;
@@ -62,14 +67,14 @@ pub async fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
     let self_link = Link {
         rel: "self".to_owned(),
         link_type: LinkType::ActivityJson,
-        href: format!("https://example.com/feeds/{}", feed.feed_id)
+        href: format!("https://{}/feeds/{}", domain, feed.feed_id)
     };
 
     let mut links = Vec::new();
     links.push(self_link);
 
     let actor = WebFinger {
-        subject: format!("acc:{}@{}", handle, domain),
+        subject: format!("acct:{}@{}", handle, domain),
         links
     };
 

@@ -117,6 +117,7 @@ fn serve_json_feed(_req: Request, ctx: Context<'_>, feed: Feed) -> ResponseResul
 
     let id = format!("https://{}/feeds/{}", domain, feed.feed_id);
     let inbox = format!("https://{}/inbox", domain);
+    let outbox = format!("https://{}/feeds/{}/outbox", domain, feed.feed_id);
 
     let mut context = Vec::new();
     context.push(activitypub::Context::ActivityStreams);
@@ -124,9 +125,11 @@ fn serve_json_feed(_req: Request, ctx: Context<'_>, feed: Feed) -> ResponseResul
     let actor = Actor {
         context,
         id: id.to_owned(),
+        name: feed.handle.to_owned(),
         actor_type: activitypub::ActorType::Person,
         preferred_username: feed.handle,
         inbox,
+        outbox,
         public_key: activitypub::PublicKey::new(&id, &feed.private_key_pem)
     };
 

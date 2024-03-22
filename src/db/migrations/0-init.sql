@@ -19,7 +19,7 @@ CREATE TABLE globals (
 ) STRICT;
 
 INSERT INTO globals (key, value) VALUES
-('domain', 'example.com');
+('domain', 'sailboat.fly.dev');
 
 /* INSERT INTO feeds (internal_name, display_name, handle) */
 /* VALUES ('Thoughts', 'Alex Petros', 'thoughts'); */

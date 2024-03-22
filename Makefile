@@ -22,10 +22,14 @@ test:
 wtest:
 	cargo watch $(WATCH_FLAGS) -s 'cargo test && ./test/integration/run-integration-tests.sh'
 
+.PHONY: delete-db
+delete-db:
+	rm -f $(DB_NAME)*
+
 .PHONY: reset-db
 reset-db:
-	rm -f $(DB_NAME)
-	cat ./db/migrations/0-init.sql | sqlite3 $(DB_NAME)
+	rm -f $(DB_NAME)*
+	cat ./src/db/migrations/0-init.sql | sqlite3 $(DB_NAME)
 
 .PHONY: check
 check:
