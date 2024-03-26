@@ -24,8 +24,7 @@ pub fn get_signature(method: Method, target: &str, host: &str, date: DateTime<Tz
     let method = method.as_str().to_lowercase();
     let date = date.format("%a, %d %b %Y %X %Z");
 
-    let headers = format!("
-(request-target): {} {}
+    let headers = format!("(request-target): {} {}
 host: {}
 date: {}",
         method, target, host, date);
