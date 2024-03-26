@@ -1,7 +1,7 @@
 use sqlite::initliaze_db;
 use tokio_util::task::TaskTracker;
 use crate::server::context::GlobalContext;
-use std::{env, process};
+use std::env;
 use std::sync::Arc;
 use std::net::SocketAddr;
 use hyper::body;
@@ -25,6 +25,7 @@ mod sqlite;
 mod queries;
 mod activitypub;
 
+const DEFAULT_DB: &str = "./sailboat.db";
 
 #[tokio::main]
 async fn main() {
@@ -32,12 +33,14 @@ async fn main() {
     let port = config.port;
     let tracker = Arc::new(TaskTracker::new());
 
+    let db_path = std::env::var("DB_PATH").unwrap_or(DEFAULT_DB.to_owned());
+
     // If db does not eixst, create it
     // TODO eventually this needs to be done with some kind of admin/setup panel
-    let has_db = Path::new("./sailboat.db").exists();
+    let has_db = Path::new(&db_path).exists();
     if !has_db {
         println!("No file for database found; creating one.");
-        initliaze_db("./sailboat.db").expect("Failed to startup database");
+        initliaze_db(&db_path).expect("Failed to startup database");
     } else {
         println!("Found database file, initializing");
     }
@@ -59,6 +62,9 @@ async fn main() {
 
 }
 
+// Doing this because MacOS shows me an annoying notification for the latter
+const HOST: &str = if cfg!(debug_assertions) { "127.0.0.1" } else { "0.0.0.0" };
+
 async fn run_server(port: u16, tracker: Arc<TaskTracker>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     // Setup logging (leaving at DEBUG level for now)
@@ -77,7 +83,8 @@ async fn run_server(port: u16, tracker: Arc<TaskTracker>) -> Result<(), Box<dyn 
 
     let g_ctx = Arc::new(GlobalContext::new(env, statics));
 
-    let addr: SocketAddr = format!("0.0.0.0:{}", port).parse()?;
+    let addr: SocketAddr = format!("{}:{}", HOST, port).parse()?;
+
     let listener = TcpListener::bind(addr).await?;
     info!("Now listening at http://localhost:{}", port);
 

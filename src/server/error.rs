@@ -1,3 +1,5 @@
+use hyper::header::InvalidHeaderValue;
+use openssl::error::ErrorStack;
 use std::fmt::Display;
 
 use hyper::StatusCode;
@@ -14,6 +16,16 @@ impl std::error::Error for ServerError {}
 impl Display for ServerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} {}", self.prefix, self.message)
+    }
+}
+
+impl From<InvalidHeaderValue> for ServerError {
+    fn from(err: InvalidHeaderValue) -> Self {
+        ServerError {
+            prefix: "[HYPER ERROR]",
+            message: err.to_string(),
+            status_code: StatusCode::INTERNAL_SERVER_ERROR
+        }
     }
 }
 
@@ -44,6 +56,24 @@ impl From<serde_html_form::de::Error> for ServerError {
             message: err.to_string(),
             status_code: StatusCode::BAD_REQUEST
         }
+    }
+}
+
+impl From<ErrorStack> for ServerError {
+    fn from(err: ErrorStack) -> Self {
+        ServerError {
+            prefix: "[OpenSSL ERROR]",
+            message: err.to_string(),
+            status_code: StatusCode::BAD_REQUEST
+        }
+    }
+}
+
+pub fn bad_gateway(message: &str) -> ServerError {
+    ServerError {
+        prefix: "[BAD GATEWAY]",
+        message: message.to_owned(),
+        status_code: StatusCode::BAD_GATEWAY
     }
 }
 

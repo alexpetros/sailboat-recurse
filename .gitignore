@@ -7,6 +7,8 @@
 *.db-wal
 
 # Deployment test stuff
+private_key_pem
+.dockerignore
 Dockerfile
 fly.toml
 

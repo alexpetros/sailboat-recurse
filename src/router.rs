@@ -25,6 +25,8 @@ pub const GET: &Method = &Method::GET;
 pub const POST: &Method = &Method::POST;
 pub const DELETE: &Method = &Method::DELETE;
 
+const DEFAULT_DB: &str = "./sailboat.db";
+
 pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
     let method = req.method();
     let path = req.uri().path();
@@ -33,7 +35,8 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
         debug!("Received {} request at {}", method, path);
     }
 
-    let db = get_conn("./sailboat.db")?;
+    let db_path = std::env::var("DB_PATH").unwrap_or(DEFAULT_DB.to_owned());
+    let db = get_conn(&db_path)?;
 
     let ctx = Context::new(&g_ctx, db)?;
 
@@ -52,11 +55,11 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
     let subroutes: Vec<&str> = without_query.split("/").collect();
 
     match (method, &subroutes[1..]) {
-        (GET, [""]) => index::get(req, ctx),
+        (GET, [""]) => index::get(req, ctx).await,
         (GET, ["debug"]) => debug::get(req, ctx),
 
         (GET, ["feeds", "new"]) => feeds::new::get(req, ctx),
-        (GET, ["feeds", ..]) => feeds::get(req, ctx),
+        (GET, ["feeds", ..]) => feeds::get(req, ctx).await,
         (POST, ["feeds"]) => feeds::post(req, ctx).await,
 
         (POST, ["posts"]) => posts::post(req, ctx).await,

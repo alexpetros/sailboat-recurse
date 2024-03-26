@@ -10,7 +10,7 @@ CREATE TABLE feeds (
   internal_name TEXT NOT NULL,
   display_name TEXT NOT NULL,
   handle TEXT NOT NULL,
-  private_key_pem BLOB NOT NULL
+  private_key_pem TEXT NOT NULL
 ) STRICT;
 
 CREATE TABLE globals (

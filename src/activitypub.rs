@@ -2,7 +2,8 @@ use openssl::pkey::PKey;
 use serde::Serialize;
 use serde::Deserialize;
 
-mod signature;
+pub mod signature;
+pub mod feeds;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Context {
@@ -26,8 +27,8 @@ pub struct PublicKey {
 }
 
 impl PublicKey {
-    pub fn new (id: &str, private_key_pem: &Vec<u8>) -> PublicKey {
-        let private_key_pem = PKey::private_key_from_pem(private_key_pem).unwrap();
+    pub fn new (id: &str, private_key_pem: &str) -> PublicKey {
+        let private_key_pem = PKey::private_key_from_pem(private_key_pem.as_bytes()).unwrap();
         let public_key_pem = private_key_pem.public_key_to_pem().unwrap();
         PublicKey {
             id: format!("{}#main-key", id),
