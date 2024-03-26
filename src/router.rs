@@ -7,6 +7,7 @@ mod healthcheck;
 mod well_known;
 
 use crate::router::well_known::webfinger;
+use hyper::header::HOST;
 use hyper::StatusCode;
 use crate::server::context::Context;
 use crate::server::response::ResponseResult;
@@ -30,9 +31,10 @@ const DEFAULT_DB: &str = "./sailboat.db";
 pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
     let method = req.method();
     let path = req.uri().path();
+    let origin = req.headers().get(HOST).ok_or("unknown");
 
     if path != "/debug" {
-        debug!("Received {} request at {}", method, path);
+        debug!("Received {} request at {} from {:?}", method, path, origin);
     }
 
     let db_path = std::env::var("DB_PATH").unwrap_or(DEFAULT_DB.to_owned());

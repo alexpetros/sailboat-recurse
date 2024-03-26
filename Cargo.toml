@@ -21,6 +21,7 @@ openssl = { version = "0.10", features = [] }
 chrono = "0.4.35"
 minijinja-embed = "1.0.14"
 reqwest = "0.12.1"
+chrono-tz = "0.8.6"
 
 [build-dependencies]
 minijinja-embed = "1.0.14"

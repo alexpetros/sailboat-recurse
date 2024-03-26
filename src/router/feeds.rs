@@ -122,7 +122,7 @@ async fn serve_html_feed(_req: Request, ctx: Context<'_>, feed: Feed) -> Respons
 
     let req_body = get_remote_actor(&domain, feed.feed_id, &feed.private_key_pem)
         .await
-        .unwrap_or("".to_owned());
+        .unwrap_or_else(|e| {  e.message });
     let context = context! { req_body => req_body, ..context };
 
     let body = ctx.render("feed.html", context);
