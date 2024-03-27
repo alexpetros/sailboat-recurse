@@ -7,8 +7,6 @@ use super::error::{body_not_utf8, body_too_large};
 
 pub struct Request(pub hyper::Request<Incoming>);
 
-
-
 impl From<hyper::Request<Incoming>> for Request {
     fn from(req: hyper::Request<Incoming>) -> Self {
         Request(req)

@@ -6,9 +6,9 @@ mod serve_static;
 mod healthcheck;
 mod well_known;
 
+use crate::server::error::ServerError;
 use crate::router::well_known::webfinger;
 use hyper::header::HOST;
-use hyper::StatusCode;
 use crate::server::context::Context;
 use crate::server::response::ResponseResult;
 use crate::sqlite::get_conn;
@@ -31,10 +31,12 @@ const DEFAULT_DB: &str = "./sailboat.db";
 pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
     let method = req.method();
     let path = req.uri().path();
-    let origin = req.headers().get(HOST).ok_or("unknown");
+    let host = req.headers().get(HOST)
+        .map(|h| h.to_str().unwrap_or("UNKNOWN"))
+        .unwrap_or("UNKNOWN");
 
     if path != "/debug" {
-        debug!("Received {} request at {} from {:?}", method, path, origin);
+        debug!("Received {} request at {} from host {}", method, path, host);
     }
 
     let db_path = std::env::var("DB_PATH").unwrap_or(DEFAULT_DB.to_owned());
@@ -75,15 +77,24 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
 
 }
 
+fn log_warn_and_send_specific_message(err: ServerError) -> ResponseResult {
+    warn!("{}", err);
+    response::send_status_and_message(err)
+}
+
+fn log_error_and_send_generic_message(err: ServerError) -> ResponseResult {
+    error!("{}", err);
+    response::send_status(err.status_code)
+}
+
 pub async fn serve(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
     let result = router(req, g_ctx).await;
-    if let Err(error) = result {
-        if error.status_code == StatusCode::INTERNAL_SERVER_ERROR {
-            error!("{}", error);
-            response::send_status(error.status_code)
-        } else {
-            warn!("{}", error);
-            response::send_status_and_message(error)
+    if let Err(err) = result {
+        // 4xx error messages are passed onto users, the rest aren't
+        match err.status_code.as_u16() {
+            400..=499 => log_warn_and_send_specific_message(err),
+            500..=599 => log_error_and_send_generic_message(err),
+            _ => log_error_and_send_generic_message(err)
         }
     } else {
         result

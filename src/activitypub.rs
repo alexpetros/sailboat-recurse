@@ -1,9 +1,23 @@
+use chrono::Utc;
+use chrono_tz::Etc::GMT;
+use hyper::header::{HeaderName, HeaderValue};
+use hyper::header::ACCEPT;
+use hyper::header::DATE;
+use hyper::Method;
+use openssl::pkey;
 use openssl::pkey::PKey;
-use serde::Serialize;
+use reqwest::RequestBuilder;
 use serde::Deserialize;
+use serde::Serialize;
+
+use crate::server::error::ServerError;
+
+use self::signature::get_signature_header;
 
 pub mod signature;
 pub mod feeds;
+
+static SHORT_ACCEPT_HEADER: &str = "application/activity+json";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Context {
@@ -72,4 +86,22 @@ pub struct Link {
 pub struct WebFinger {
     pub subject: String,
     pub links: Vec<Link>,
+}
+
+pub fn build_activitypub_request(method: Method, host: &str, target: &str, pkey: PKey<pkey::Private>) -> Result<RequestBuilder, ServerError> {
+    let date = Utc::now().with_timezone(&GMT);
+    let date_header = HeaderValue::from_bytes(date.format("%a, %d %b %Y %X %Z").to_string().as_bytes())?;
+    // let key_id = format!("https://{}/feeds/{}#main-key", &domain, feed_id);
+    let key_id = format!("https://a9b9-2602-fb65-0-100-703d-1c5-cc0c-986a.ngrok-free.app/feeds/{}#main-key", 1);
+    let signature = get_signature_header(&method, &key_id, target, host, date, pkey)?;
+
+    let uri = format!("https://{}/{}", host, target);
+
+    let client = reqwest::Client::new();
+    let request = client.request(method, uri)
+        .header(DATE, date_header)
+        .header(ACCEPT, HeaderValue::from_static(SHORT_ACCEPT_HEADER))
+        .header(HeaderName::from_static("signature"), signature);
+
+    Ok(request)
 }

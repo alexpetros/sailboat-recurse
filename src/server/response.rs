@@ -11,7 +11,7 @@ use crate::server::error::ServerError;
 pub type ResponseResult = std::result::Result<Response<BoxBody<Bytes, hyper::Error>>, ServerError>;
 
 
-fn empty() -> BoxBody<Bytes, hyper::Error> {
+pub fn empty() -> BoxBody<Bytes, hyper::Error> {
     Empty::<Bytes>::new().map_err(|never| match never {}).boxed()
 }
 
