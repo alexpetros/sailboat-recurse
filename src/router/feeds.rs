@@ -3,7 +3,7 @@ use crate::server::response::send_status;
 use hyper::header::HeaderValue;
 use hyper::header::CONTENT_TYPE;
 use tracing::log::debug;
-use crate::activitypub::feeds::get_remote_actor;
+use crate::activitypub::actors::get_remote_actor;
 use serde::Deserialize;
 use serde::Serialize;
 use openssl::pkey::PKey;

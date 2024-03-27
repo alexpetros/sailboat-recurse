@@ -15,7 +15,7 @@ use crate::server::error::ServerError;
 use self::signature::get_signature_header;
 
 pub mod signature;
-pub mod feeds;
+pub mod actors;
 
 static SHORT_ACCEPT_HEADER: &str = "application/activity+json";
 
