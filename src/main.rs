@@ -7,7 +7,6 @@ use std::net::SocketAddr;
 use hyper::body;
 use tokio::signal;
 use crate::config::Config;
-use server::request::Request;
 
 use std::path::Path;
 use hyper::server::conn::http1;
@@ -96,15 +95,12 @@ async fn run_server(port: u16, tracker: Arc<TaskTracker>) -> Result<(), Box<dyn 
 
         let shared_ctx = g_ctx.clone(); // Why is this necessary?
         let service = service_fn(move |req: hyper::Request<body::Incoming>| {
-            router::serve(Request(req), shared_ctx.clone())
+            router::serve(req, shared_ctx.clone())
         });
 
         // Spawn a tokio task to serve multiple connections concurrently
         tracker.spawn(async move {
-            if let Err(err) = http1::Builder::new()
-                .serve_connection(io, service)
-                .await
-            {
+            if let Err(err) = http1::Builder::new().serve_connection(io, service).await {
                 error!("Error serving connection: {}", err);
             }
         });

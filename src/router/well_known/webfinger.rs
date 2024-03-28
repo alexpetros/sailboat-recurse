@@ -9,7 +9,7 @@ use crate::activitypub::Link;
 use crate::activitypub::WebFinger;
 use crate::server::context::Context;
 use crate::server::error::bad_request;
-use crate::server::request::Request;
+use crate::server::request::IncomingRequest;
 use crate::server::response::send_status;
 use crate::server::response::ResponseResult;
 
@@ -21,7 +21,7 @@ struct Query {
     resource: String
 }
 
-pub async fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
+pub async fn get(req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
     let query = req.uri().query().ok_or(bad_request("Missing query parameter"))?;
 
     let resource = serde_html_form::from_str::<Query>(query)
@@ -43,10 +43,7 @@ pub async fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
 
     debug!("Searching for user {}", handle);
 
-    let db_domain: String = ctx.db
-        .query_row("SELECT value FROM globals WHERE key = 'domain'", (), |row| { row.get(0) })?;
-
-    if domain != db_domain {
+    if domain != req.domain {
         return send_status(StatusCode::NOT_FOUND)
     }
 

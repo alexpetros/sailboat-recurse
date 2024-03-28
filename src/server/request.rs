@@ -5,17 +5,18 @@ use crate::server::error::ServerError;
 
 use super::error::{body_not_utf8, body_too_large};
 
-pub struct Request(pub hyper::Request<Incoming>);
-
-impl From<hyper::Request<Incoming>> for Request {
-    fn from(req: hyper::Request<Incoming>) -> Self {
-        Request(req)
-    }
+pub struct IncomingRequest {
+    pub request: hyper::Request<Incoming>,
+    pub domain: String,
 }
 
-impl Request {
+impl IncomingRequest {
+    pub fn new(request: hyper::Request<Incoming>, domain: String) -> Self {
+        Self { request, domain }
+    }
+
     pub async fn get_body(self) -> Result<FullRequest, ServerError> {
-        let (parts, body) = self.0.into_parts();
+        let (parts, body) = self.request.into_parts();
         let body_bytes = http_body_util::Limited::new(body, 1024 * 64);
 
         let bytes = body_bytes.collect().await
@@ -27,10 +28,10 @@ impl Request {
     }
 }
 
-impl Deref for Request {
+impl Deref for IncomingRequest {
     type Target = hyper::Request<Incoming>;
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.request
     }
 }
 
@@ -50,7 +51,7 @@ impl Deref for FullRequest {
 }
 
 impl FullRequest {
-    pub fn text (&self) -> Result<String, ServerError> {
+    pub fn text(&self) -> Result<String, ServerError> {
         let body = self.body().to_vec();
         String::from_utf8(body).map_err(|_| { body_not_utf8() })
     }

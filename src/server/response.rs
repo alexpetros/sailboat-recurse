@@ -5,7 +5,7 @@ use hyper::body::Bytes;
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, Empty, Full};
 use crate::server::context::Context;
-use crate::server::request::Request;
+use crate::server::request::IncomingRequest;
 use crate::server::error::ServerError;
 
 pub type ResponseResult = std::result::Result<Response<BoxBody<Bytes, hyper::Error>>, ServerError>;
@@ -49,7 +49,7 @@ pub fn send_status_and_message(error: ServerError) -> ResponseResult {
     Ok(res)
 }
 
-pub fn not_found(_req: Request, ctx: Context<'_>) -> ResponseResult {
+pub fn not_found(_req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
     let page = ctx.render("404.html", context! {});
     let mut res = send(page);
     *res.status_mut() = StatusCode::NOT_FOUND;

@@ -6,7 +6,7 @@ use tracing::log::debug;
 use serde::Deserialize;
 use serde::Serialize;
 use crate::server::context::Context;
-use crate::server::request::Request;
+use crate::server::request::IncomingRequest;
 use crate::server::response::{ResponseResult, send};
 
 #[derive(Debug, Serialize)]
@@ -22,7 +22,7 @@ struct PostForm {
     content: String
 }
 
-pub async fn post(req: Request, ctx: Context<'_>) -> ResponseResult {
+pub async fn post(req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
     let req = req.get_body().await?;
     let text = req.text()?;
     let form: PostForm = serde_html_form::from_str(&text)?;
@@ -37,7 +37,7 @@ pub async fn post(req: Request, ctx: Context<'_>) -> ResponseResult {
     Ok(send(body))
 }
 
-pub fn delete(req: Request, ctx: Context<'_>) -> ResponseResult {
+pub fn delete(req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
     let post_param = req.uri().path().split("/")
         .nth(2)
         .ok_or(error::bad_request("Missing ID"))?;

@@ -13,12 +13,13 @@ use crate::server::context::Context;
 use crate::server::response::ResponseResult;
 use crate::sqlite::get_conn;
 use std::sync::Arc;
-use hyper::Method;
+use hyper::{Method, Request};
+use hyper::body::Incoming;
 use tracing::debug;
 use tracing::warn;
 use tracing::error;
 
-use crate::server::request::Request;
+use crate::server::request::IncomingRequest;
 use crate::server::context::GlobalContext;
 use crate::server::response;
 
@@ -28,37 +29,40 @@ pub const DELETE: &Method = &Method::DELETE;
 
 const DEFAULT_DB: &str = "./sailboat.db";
 
-pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
-    let method = req.method();
+pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
     let path = req.uri().path();
     let host = req.headers().get(HOST)
         .map(|h| h.to_str().unwrap_or("UNKNOWN"))
         .unwrap_or("UNKNOWN");
 
     if path != "/debug" {
-        debug!("Received {} request at {} from host {}", method, path, host);
+        debug!("Received {} request at {} from host {}", &req.method(), path, host);
     }
 
     let db_path = std::env::var("DB_PATH").unwrap_or(DEFAULT_DB.to_owned());
     let db = get_conn(&db_path)?;
-
     let ctx = Context::new(&g_ctx, db)?;
 
+    let domain: String = ctx.db
+        .query_row("SELECT value FROM globals WHERE key = 'domain'", (), |row| { row.get(0) })?;
+
+    let req = IncomingRequest::new(req, domain);
+
     // Serve static files separately
-    if path.starts_with("/static") {
+    if req.uri().path().starts_with("/static") {
         return serve_static::get(req, ctx).await;
     }
 
     // Remove the query parameter for routing purposes
-    let without_query = match path.split_once("?") {
-        None => path,
+    let without_query = match req.uri().path().split_once("?") {
+        None => req.uri().path(),
         Some(x) => x.0
     };
 
-    // Split into subroutes
-    let subroutes: Vec<&str> = without_query.split("/").collect();
+    // Split into sub-routes
+    let sub_routes: Vec<&str> = without_query.split("/").collect();
 
-    match (method, &subroutes[1..]) {
+    match (req.method(), &sub_routes[1..]) {
         (GET, [""]) => index::get(req, ctx).await,
         (GET, ["debug"]) => debug::get(req, ctx),
 
@@ -74,7 +78,6 @@ pub async fn router(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResu
         (GET, ["healthcheck"]) => healthcheck::get(req, ctx),
         _ => response::not_found(req, ctx)
     }
-
 }
 
 fn log_warn_and_send_specific_message(err: ServerError) -> ResponseResult {
@@ -87,7 +90,7 @@ fn log_error_and_send_generic_message(err: ServerError) -> ResponseResult {
     response::send_status(err.status_code)
 }
 
-pub async fn serve(req: Request, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
+pub async fn serve(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
     let result = router(req, g_ctx).await;
     if let Err(err) = result {
         // 4xx error messages are passed onto users, the rest aren't

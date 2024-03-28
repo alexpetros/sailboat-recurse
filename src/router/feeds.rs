@@ -15,10 +15,9 @@ use crate::server::response::{self, redirect};
 use serde_json::json;
 use crate::activitypub::{self, Actor};
 
-
 use crate::server::error::{self, bad_request};
 use crate::server::context::Context;
-use crate::server::request::Request;
+use crate::server::request::IncomingRequest;
 use crate::server::response::{ResponseResult, send};
 
 pub mod new;
@@ -42,7 +41,7 @@ struct NewFeed {
 static LONG_ACCEPT_HEADER: &str = "application/ld+json;profile=“https://www.w3.org/ns/activitystreams";
 static SHORT_ACCEPT_HEADER: &str = "application/activity+json";
 
-pub async fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
+pub async fn get(req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
     let feed_param = req.uri().path().split("/")
         .nth(2)
         .ok_or(error::bad_request("Missing feed ID"))?;
@@ -92,7 +91,7 @@ pub async fn get(req: Request, ctx: Context<'_>) -> ResponseResult {
     }
 }
 
-pub async fn post(req: Request, ctx: Context<'_>) -> ResponseResult {
+pub async fn post(req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
     let req = req.get_body().await?;
     let text = req.text()?;
     let form: NewFeed = serde_html_form::from_str(&text)?;
@@ -114,9 +113,8 @@ pub async fn post(req: Request, ctx: Context<'_>) -> ResponseResult {
     redirect(&path)
 }
 
-async fn serve_html_feed(_req: Request, ctx: Context<'_>, feed: Feed) -> ResponseResult {
-    let domain: String = ctx.db
-        .query_row("SELECT value FROM globals WHERE key = 'domain'", (), |row| { row.get(0) })?;
+async fn serve_html_feed(req: IncomingRequest, ctx: Context<'_>, feed: Feed) -> ResponseResult {
+    let domain = req.domain;
     let posts = get_posts_in_feed(&ctx.db, feed.feed_id)?;
     let context = context! { feed => feed, posts => posts };
 
@@ -129,9 +127,8 @@ async fn serve_html_feed(_req: Request, ctx: Context<'_>, feed: Feed) -> Respons
     Ok(response::send(body))
 }
 
-fn serve_json_feed(_req: Request, ctx: Context<'_>, feed: Feed) -> ResponseResult {
-    let domain: String = ctx.db
-        .query_row("SELECT value FROM globals WHERE key = 'domain'", (), |row| { row.get(0) })?;
+fn serve_json_feed(req: IncomingRequest, _ctx: Context<'_>, feed: Feed) -> ResponseResult {
+    let domain = req.domain;
 
     let id = format!("https://{}/feeds/{}", domain, feed.feed_id);
     let inbox = format!("https://{}/inbox", domain);
