@@ -3,7 +3,6 @@ use crate::server::response::send_status;
 use hyper::header::HeaderValue;
 use hyper::header::CONTENT_TYPE;
 use tracing::log::debug;
-use crate::activitypub::actors::get_remote_actor;
 use serde::Deserialize;
 use serde::Serialize;
 use openssl::pkey::PKey;
@@ -113,15 +112,15 @@ pub async fn post(req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
     redirect(&path)
 }
 
-async fn serve_html_feed(req: IncomingRequest, ctx: Context<'_>, feed: Feed) -> ResponseResult {
-    let domain = req.domain;
+async fn serve_html_feed(_req: IncomingRequest, ctx: Context<'_>, feed: Feed) -> ResponseResult {
+    // let domain = req.domain;
     let posts = get_posts_in_feed(&ctx.db, feed.feed_id)?;
     let context = context! { feed => feed, posts => posts };
 
-    let req_body = get_remote_actor(&domain, feed.feed_id, &feed.private_key_pem)
-        .await
-        .unwrap_or_else(|e| {  e.message });
-    let context = context! { req_body => req_body, ..context };
+    // let req_body = get_remote_actor(&domain, feed.feed_id, &feed.private_key_pem)
+    //     .await
+    //     .unwrap_or_else(|e| {  e.message });
+    // let context = context! { req_body => req_body, ..context };
 
     let body = ctx.render("feed.html", context);
     Ok(response::send(body))
@@ -142,8 +141,10 @@ fn serve_json_feed(req: IncomingRequest, _ctx: Context<'_>, feed: Feed) -> Respo
     let actor = Actor {
         context,
         id: id.to_owned(),
+        url: id.to_owned(),
         name: feed.handle.to_owned(),
         actor_type: activitypub::ActorType::Person,
+        summary: "We can't rewind, we've gone too far".to_owned(),
         preferred_username: feed.handle,
         inbox,
         outbox,

@@ -29,6 +29,7 @@ button.delete {
 }
 </style>
 <h1>{{ feed.internal_name }}</h1>
+<div>@{{ feed.handle }}</div>
 
 <section class=newpost>
 <h2>Create</h2>
@@ -45,7 +46,7 @@ button.delete {
 </section>
 
 <h2>Body</h2>
-<p>{{ req_body }}</p>
+<p style="line-break: anywhere">{{ req_body }}</p>
 
 {% block feed %}
 <section class=feed>
