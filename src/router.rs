@@ -6,9 +6,9 @@ mod serve_static;
 mod healthcheck;
 mod well_known;
 
+use hyper::header::HOST;
 use crate::server::error::ServerError;
 use crate::router::well_known::webfinger;
-use hyper::header::HOST;
 use crate::server::context::Context;
 use crate::server::response::ResponseResult;
 use crate::sqlite::get_conn;
@@ -43,8 +43,11 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Re
     let db = get_conn(&db_path)?;
     let ctx = Context::new(&g_ctx, db)?;
 
-    let domain: String = ctx.db
-        .query_row("SELECT value FROM globals WHERE key = 'domain'", (), |row| { row.get(0) })?;
+    let domain = if g_ctx.domain.is_some() {
+        g_ctx.domain.clone().unwrap()
+    } else {
+        ctx.db.query_row("SELECT value FROM globals WHERE key = 'domain'", (), |row| { row.get(0) })?
+    };
 
     let req = IncomingRequest::new(req, domain);
 

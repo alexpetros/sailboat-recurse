@@ -1,3 +1,4 @@
+use tokio::signal;
 use sqlite::initliaze_db;
 use tokio_util::task::TaskTracker;
 use crate::server::context::GlobalContext;
@@ -5,7 +6,6 @@ use std::env;
 use std::sync::Arc;
 use std::net::SocketAddr;
 use hyper::body;
-use tokio::signal;
 use crate::config::Config;
 
 use std::path::Path;
@@ -44,8 +44,29 @@ async fn main() {
         println!("Found database file, initializing");
     }
 
+    // Setup template environment
+    let mut env = Environment::new();
+    minijinja_embed::load_templates!(&mut env);
+    let env = Arc::new(env);
+
+    // Load static files
+    let statics = static_files::load_static();
+    let statics = Arc::new(statics);
+
+    let mut g_ctx = GlobalContext::new(env, statics);
+
+    // Right now this only available as a debug feature, but potentially available for more soon
+    if cfg!(debug_assertions) {
+        g_ctx.domain = std::env::var("SB_DOMAIN").ok();
+        if g_ctx.domain.is_none() {
+            println!("Dev mode running but no global callback domain is specified. Remote servers will not be able to call back.");
+        }
+    }
+
+    let g_ctx = Arc::new(g_ctx);
+
     // TODO this does not properly crash on startup if it can't bind a port
-    tokio::task::spawn(run_server(port, tracker.clone()));
+    tokio::task::spawn(run_server(port, tracker.clone(), g_ctx));
 
     // TODO upgrade this to handle interrupts
     match signal::ctrl_c().await {
@@ -64,24 +85,12 @@ async fn main() {
 // Doing this because MacOS shows me an annoying notification for the latter
 const HOST: &str = if cfg!(debug_assertions) { "127.0.0.1" } else { "0.0.0.0" };
 
-async fn run_server(port: u16, tracker: Arc<TaskTracker>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn run_server(port: u16, tracker: Arc<TaskTracker>, g_ctx: Arc<GlobalContext<'static>>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     // Setup logging (leaving at DEBUG level for now)
     tracing_subscriber::fmt()
         .with_max_level(LevelFilter::DEBUG)
         .init();
-
-    // Setup template environment
-    let mut env = Environment::new();
-    minijinja_embed::load_templates!(&mut env);
-    let env = Arc::new(env);
-
-    // Load static files
-    let statics = static_files::load_static();
-    let statics = Arc::new(statics);
-
-    let g_ctx = Arc::new(GlobalContext::new(env, statics));
-
     let addr: SocketAddr = format!("{}:{}", HOST, port).parse()?;
 
     let listener = TcpListener::bind(addr).await?;
