@@ -14,7 +14,7 @@ function cleanup {
 trap cleanup EXIT
 
 # Start ngrok and hide the output
-ngrok http 3000 --log=stdout > ngrok.log &
+ngrok http 3000 --log=stdout > /dev/null &
 NGROK_PID=$!
 echo started ngrok
 sleep .5

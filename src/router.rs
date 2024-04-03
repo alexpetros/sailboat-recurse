@@ -2,6 +2,7 @@ mod index;
 mod posts;
 mod feeds;
 mod debug;
+mod search;
 mod serve_static;
 mod healthcheck;
 mod well_known;
@@ -72,6 +73,8 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Re
         (GET, ["feeds", "new"]) => feeds::new::get(req, ctx),
         (GET, ["feeds", ..]) => feeds::get(req, ctx).await,
         (POST, ["feeds"]) => feeds::post(req, ctx).await,
+
+        (POST, ["search", ..]) => search::post(req, ctx).await,
 
         (POST, ["posts"]) => posts::post(req, ctx).await,
         (DELETE, ["posts", ..]) => posts::delete(req, ctx),

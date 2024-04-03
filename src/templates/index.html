@@ -20,6 +20,7 @@ textarea[name=content] {
   display: flex;
   justify-content: space-between;
 }
+
 button.delete {
   display: block;
 }
@@ -27,5 +28,12 @@ button.delete {
 
   <h1>{{ name }}'s Sailboat</h1>
   The future of posting, websites, internet, and everything else.
-  <p>{{ req_body }}
+
+  <h2>Search</h2>
+  <p>Find a ActivityPub user and follow them</p>
+  <form method=POST action=/serach>
+    <input type=search>
+    <button>Search</button>
+  </form>
+
 {% endblock %}
