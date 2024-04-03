@@ -13,6 +13,10 @@ $(DEBUG_BUILD):
 release:
 	cargo run --release
 
+.PHONY: ngrok
+ngrok:
+	@./scripts/start-with-ngrok.sh
+
 .PHONY: test
 test:
 	cargo test
