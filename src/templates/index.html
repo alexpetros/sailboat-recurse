@@ -29,11 +29,18 @@ button.delete {
   <h1>{{ name }}'s Sailboat</h1>
   The future of posting, websites, internet, and everything else.
 
-  <h2>Search</h2>
-  <p>Find a ActivityPub user and follow them</p>
-  <form method=POST action=/serach>
-    <input type=search>
-    <button>Search</button>
-  </form>
+  <section>
+    <h2>Search</h2>
+    <p>Find a ActivityPub user and follow them</p>
+    <form method=POST action=/search hx-post=/search hx-swap=innerHTML hx-target=#results>
+      <input type=search name=q>
+      <button>Search</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Results</h2>
+    <p id=results></p>
+  </section>
 
 {% endblock %}

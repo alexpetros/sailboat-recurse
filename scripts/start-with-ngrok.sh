@@ -19,7 +19,7 @@ NGROK_PID=$!
 echo started ngrok
 sleep .5
 
-export SB_DOMAIN=$(curl localhost:4040/api/tunnels | sed -nr 's/.*"public_url":"([^"]*)".*/\1/p')
+export SB_DOMAIN=$(curl localhost:4040/api/tunnels | sed -nr 's/.*"public_url":"https:\/\/([^"]*)".*/\1/p')
 echo Ngrok running at $SB_DOMAIN
 cargo watch -x run
 

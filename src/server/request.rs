@@ -23,8 +23,9 @@ impl IncomingRequest {
             .map(|r| { r.to_bytes() })
             .map_err(|_| { body_too_large() })?;
 
-        let req = hyper::Request::from_parts(parts, bytes);
-        Ok(FullRequest(req))
+        let request = hyper::Request::from_parts(parts, bytes);
+        let domain = self.domain;
+        Ok(FullRequest { request, domain })
     }
 }
 
@@ -35,18 +36,15 @@ impl Deref for IncomingRequest {
     }
 }
 
-pub struct FullRequest(pub hyper::Request<Bytes>);
-
-impl From<hyper::Request<Bytes>> for FullRequest {
-    fn from(req: hyper::Request<Bytes>) -> Self {
-        FullRequest(req)
-    }
+pub struct FullRequest {
+    pub request: hyper::Request<Bytes>,
+    pub domain: String,
 }
 
 impl Deref for FullRequest {
     type Target = hyper::Request<Bytes>;
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.request
     }
 }
 

@@ -90,11 +90,10 @@ pub struct WebFinger {
     pub links: Vec<Link>,
 }
 
-pub fn build_activitypub_request(method: Method, host: &str, target: &str, pkey: PKey<pkey::Private>) -> Result<RequestBuilder, ServerError> {
+pub fn build_activitypub_request(method: Method, domain: &str, feed_id: i64, host: &str, target: &str, pkey: PKey<pkey::Private>) -> Result<RequestBuilder, ServerError> {
     let date = Utc::now().with_timezone(&GMT);
     let date_header = HeaderValue::from_bytes(date.format("%a, %d %b %Y %X %Z").to_string().as_bytes())?;
-    // let key_id = format!("https://{}/feeds/{}#main-key", &domain, feed_id);
-    let key_id = format!("https://78be-2602-fb65-0-100-25c2-d93-1edf-4273.ngrok-free.app/feeds/{}#main-key", 1);
+    let key_id = format!("https://{}/feeds/{}#main-key", &domain, feed_id);
     let signature = get_signature_header(&method, &key_id, target, host, date, pkey)?;
 
     let uri = format!("https://{}/{}", host, target);
