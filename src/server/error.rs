@@ -1,6 +1,6 @@
 use hyper::header::InvalidHeaderValue;
 use openssl::error::ErrorStack;
-use std::fmt::Display;
+use std::{error::Error, fmt::Display};
 
 use hyper::StatusCode;
 
@@ -69,10 +69,10 @@ impl From<ErrorStack> for ServerError {
     }
 }
 
-pub fn bad_gateway(message: &str) -> ServerError {
+pub fn map_bad_gateway(e: impl Error) -> ServerError {
     ServerError {
         prefix: "[BAD GATEWAY]",
-        message: message.to_owned(),
+        message: e.to_string(),
         status_code: StatusCode::BAD_GATEWAY
     }
 }

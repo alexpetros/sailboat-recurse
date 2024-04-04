@@ -1,10 +1,9 @@
 use hyper::Method;
 use openssl::pkey::PKey;
 
-use crate::activitypub::ServerError;
-use crate::server::error::bad_gateway;
+use crate::{activitypub::ServerError, server::error::map_bad_gateway};
 
-use super::build_activitypub_request;
+use super::{build_activitypub_request, Actor};
 
 pub async fn get_remote_actor(domain: &str, feed_id: i64, host: &str, target: &str, private_key_pem: &str) -> Result<String, ServerError> {
     // Sig test stuff
@@ -12,15 +11,10 @@ pub async fn get_remote_actor(domain: &str, feed_id: i64, host: &str, target: &s
     let target = format!("/@{}", target);
 
     let request = build_activitypub_request(Method::GET, domain, feed_id, host, &target, pkey)?;
-    let res = request.send().await.map_err(|e| {
-        let message = format!("{}", e);
-        bad_gateway(&message)
-    })?;
+    let res = request.send().await.map_err(map_bad_gateway)?;
 
-    let body = res.text().await.map_err(|e| {
-        let message = format!("{}", e);
-        bad_gateway(&message)
-    })?;
+    let body = res.text().await.map_err(map_bad_gateway)?;
+    let actor: Actor = serde_json::from_str(&body).map_err(map_bad_gateway)?;
 
-    Ok(body)
+    Ok(actor.url)
 }

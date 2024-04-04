@@ -24,7 +24,9 @@ pub enum Context {
     #[serde(rename = "https://www.w3.org/ns/activitystreams")]
     ActivityStreams,
     #[serde(rename = "https://w3id.org/security/v1")]
-    SecurityV1
+    SecurityV1,
+    #[serde(untagged)]
+    Unknown(serde_json::Value),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -58,12 +60,12 @@ pub struct Actor {
     pub context: Vec<Context>,
     pub id: String,
     pub url: String,
-    pub summary: String,
+    pub summary: Option<String>,
     pub name: String,
     #[serde(rename = "type")]
     pub actor_type: ActorType,
     #[serde(rename = "preferredUsername")]
-    pub preferred_username: String,
+    pub preferred_username: String, // This might be optional
     pub inbox: String,
     pub outbox: String,
     #[serde(rename = "publicKey")]
