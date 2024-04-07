@@ -37,10 +37,11 @@ pub async fn post(req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
     let user = context! {
         icon_url,
         name => actor.name,
+        url => actor.url,
         handle => actor.preferred_username,
         summary => actor.summary.unwrap_or("".to_owned())
     };
     let context = context!{ user };
 
-    Ok(send(ctx.render("user-preview.html", context)))
+    Ok(send(ctx.render("user-search-result.html", context)))
 }

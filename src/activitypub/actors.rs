@@ -9,6 +9,8 @@ use super::{build_activitypub_request, Actor};
 pub async fn get_remote_actor(domain: &str, feed_id: i64, host: &str, target: &str, private_key_pem: &str) -> Result<Actor, ServerError> {
     // Sig test stuff
     let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes())?;
+
+    // TODO get the actual URL from the webfinger
     let target = format!("/@{}", target);
 
     let request = build_activitypub_request(Method::GET, domain, feed_id, host, &target, pkey)?;
