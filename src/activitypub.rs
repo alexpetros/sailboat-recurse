@@ -35,6 +35,15 @@ pub enum ActorType {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct Icon {
+    #[serde(rename = "type")]
+    pub icon_type: String,
+    #[serde(rename = "mediaType")]
+    pub media_type: String,
+    pub url: String
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PublicKey {
     pub id: String,
     pub owner: String,
@@ -70,6 +79,7 @@ pub struct Actor {
     pub outbox: String,
     #[serde(rename = "publicKey")]
     pub public_key: PublicKey,
+    pub icon: Option<Icon>
 }
 
 #[derive(Debug, Serialize, Deserialize)]

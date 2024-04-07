@@ -1,3 +1,4 @@
+use minijinja::context;
 use serde::Deserialize;
 
 use crate::activitypub::actors::get_remote_actor;
@@ -31,6 +32,15 @@ pub async fn post(req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
         |row| row.get(0))?;
 
     let actor = get_remote_actor(&req.domain, FEED_ID, &host, &target, &private_key_pem).await?;
+    let icon_url = actor.icon.map(|i| i.url).unwrap_or("".to_owned());
 
-    Ok(send(actor))
+    let user = context! {
+        icon_url,
+        name => actor.name,
+        handle => actor.preferred_username,
+        summary => actor.summary.unwrap_or("".to_owned())
+    };
+    let context = context!{ user };
+
+    Ok(send(ctx.render("user-preview.html", context)))
 }

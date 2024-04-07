@@ -146,6 +146,7 @@ fn serve_json_feed(req: IncomingRequest, _ctx: Context<'_>, feed: Feed) -> Respo
         actor_type: activitypub::ActorType::Person,
         summary: Some("We can't rewind, we've gone too far".to_owned()),
         preferred_username: feed.handle,
+        icon: None,
         inbox,
         outbox,
         public_key
