@@ -1,11 +1,13 @@
+mod serve_static;
+mod healthcheck;
+mod well_known;
 mod index;
 mod posts;
 mod feeds;
 mod debug;
 mod search;
-mod serve_static;
-mod healthcheck;
-mod well_known;
+mod follow;
+mod following;
 
 use hyper::header::HOST;
 use crate::server::error::ServerError;
@@ -78,6 +80,9 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Re
 
         (POST, ["posts"]) => posts::post(req, ctx).await,
         (DELETE, ["posts", ..]) => posts::delete(req, ctx),
+
+        (POST, ["follow"]) => follow::post(req, ctx).await,
+        (GET, ["following"]) => following::get(req, ctx).await,
 
         (GET, [".well-known", "webfinger"]) => webfinger::get(req, ctx).await,
 

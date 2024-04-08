@@ -13,6 +13,13 @@ CREATE TABLE feeds (
   private_key_pem TEXT NOT NULL
 ) STRICT;
 
+CREATE TABLE followed_actors (
+  followed_actor_id INTEGER PRIMARY key,
+  display_name TEXT NOT NULL,
+  handle TEXT NOT NULL,
+  url TEXT NOT NULL
+) STRICT;
+
 CREATE TABLE globals (
   key TEXT NOT NULL,
   value TEXT NOT NULL

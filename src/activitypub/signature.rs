@@ -7,15 +7,15 @@ use openssl::error::ErrorStack;
 use openssl::hash::MessageDigest;
 use openssl::sign::Signer;
 use openssl::pkey::Private;
-use hyper::Method;
+use hyper::{Method, Uri};
 use openssl::pkey::PKey;
 
 use crate::server::error::ServerError;
 
 
-pub fn get_signature_header(method: &Method, key_id: &str, target: &str, host: &str, date: DateTime<Tz>, pkey: PKey<Private>) -> Result<HeaderValue, ServerError> {
+pub fn get_signature_header(method: &Method, key_id: &str, uri: &Uri, date: DateTime<Tz>, pkey: PKey<Private>) -> Result<HeaderValue, ServerError> {
 
-    let signature = get_signature(method, target, host, date, pkey)?;
+    let signature = get_signature(method, uri, date, pkey)?;
     let header_str = format!(
         r#"keyId="{}",headers="(request-target) host date",signature="{}""#,
         key_id, signature
@@ -25,9 +25,11 @@ pub fn get_signature_header(method: &Method, key_id: &str, target: &str, host: &
     Ok(header)
 }
 
-fn get_signature(method: &Method, target: &str, host: &str, date: DateTime<Tz>, pkey: PKey<Private>) -> Result<String, ErrorStack> {
+fn get_signature(method: &Method, uri: &Uri, date: DateTime<Tz>, pkey: PKey<Private>) -> Result<String, ErrorStack> {
     let method = method.as_str().to_lowercase();
     let date = date.format("%a, %d %b %Y %X %Z");
+    let host = uri.host().unwrap();
+    let target = uri.path_and_query().unwrap();
 
     let headers = format!("(request-target): {} {}\nhost: {}\ndate: {}", method, target, host, date);
     let mut signer = Signer::new(MessageDigest::sha256(), &pkey)?;

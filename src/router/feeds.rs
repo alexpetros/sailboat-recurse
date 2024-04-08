@@ -127,13 +127,12 @@ async fn serve_html_feed(_req: IncomingRequest, ctx: Context<'_>, feed: Feed) ->
 }
 
 fn serve_json_feed(req: IncomingRequest, _ctx: Context<'_>, feed: Feed) -> ResponseResult {
-    let domain = req.domain;
+    let domain = &req.domain;
 
     let id = format!("https://{}/feeds/{}", domain, feed.feed_id);
     let inbox = format!("https://{}/inbox", domain);
     let outbox = format!("https://{}/feeds/{}/outbox", domain, feed.feed_id);
     let public_key = activitypub::PublicKey::new(&id, &feed.private_key_pem);
-
 
     let mut context = Vec::new();
     context.push(activitypub::Context::ActivityStreams);

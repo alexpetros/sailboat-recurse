@@ -52,27 +52,31 @@ button.delete {
   font-style: normal;
 }
 
-.profile-search-result button {
+.profile-search-result :last-child {
   margin-left: auto;
   align-self: center;
 }
 </style>
 
-  <h1>{{ name }}'s Sailboat</h1>
-  The future of posting, websites, internet, and everything else.
+<h1>{{ name }}'s Sailboat</h1>
+The future of posting, websites, internet, and everything else.
 
-  <section>
-    <h2>Search</h2>
-    <p>Find a ActivityPub user and follow them</p>
-    <form method=POST action=/search hx-post=/search hx-swap=innerHTML hx-target=#results>
-      <input type=search name=q>
-      <button>Search</button>
-    </form>
-  </section>
+<section>
+  Following: <a href="/following">{{ follow_count }}</a>
+</section>
 
-  <section>
-    <h2>Results</h2>
-    <p id=results></p>
-  </section>
+<section>
+  <h2>Search</h2>
+  <p>Find a ActivityPub user and follow them</p>
+  <form method=POST action=/search hx-post=/search hx-swap=innerHTML hx-target=#results>
+    <input type=search name=q>
+    <button>Search</button>
+  </form>
+</section>
+
+<section>
+  <h2>Results</h2>
+  <p id=results></p>
+</section>
 
 {% endblock %}

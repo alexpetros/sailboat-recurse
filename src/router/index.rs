@@ -13,8 +13,9 @@ pub async fn get(_req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
         posts,
         feed_id => "1",
         name => "Alex",
-        bio => "Rigging my sailboat"
+        follow_count => 0
     };
+
     let body = ctx.render("index.html", context);
     Ok(response::send(body))
 }

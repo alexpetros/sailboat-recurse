@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Following</title>
+{% endblock %}
+
+{% block main %}
+<style></style>
+<h1>Following</h1>
+
+<section>
+  <ul>
+    {% for user in following %}
+    <li>{{ user.url }}
+    {% endfor %}
+  </ul>
+</section>
+
+{% endblock %}
+
+

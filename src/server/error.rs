@@ -72,7 +72,7 @@ impl From<ErrorStack> for ServerError {
 pub fn map_bad_gateway(e: impl Error) -> ServerError {
     ServerError {
         prefix: "[BAD GATEWAY]",
-        message: e.to_string(),
+        message: format!("{:?}", e),
         status_code: StatusCode::BAD_GATEWAY
     }
 }

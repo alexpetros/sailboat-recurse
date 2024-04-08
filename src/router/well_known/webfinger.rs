@@ -1,12 +1,12 @@
 use tracing::debug;
 use tracing::warn;
+use crate::activitypub::LinkType;
 use crate::server::response;
 use hyper::StatusCode;
 use serde::Deserialize;
 use serde_json::json;
-use crate::activitypub::LinkType;
-use crate::activitypub::Link;
 use crate::activitypub::WebFinger;
+use crate::activitypub::WebFingerLink;
 use crate::server::context::Context;
 use crate::server::error::bad_request;
 use crate::server::request::IncomingRequest;
@@ -61,18 +61,20 @@ pub async fn get(req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
         Err(_) => return send_status(StatusCode::NOT_FOUND)
     };
 
-    let self_link = Link {
+    let self_link = WebFingerLink {
         rel: "self".to_owned(),
-        link_type: LinkType::ActivityJson,
-        href: format!("https://{}/feeds/{}", domain, feed.feed_id)
+        link_type: Some(LinkType::ActivityJson),
+        href: Some(format!("https://{}/feeds/{}", domain, feed.feed_id))
     };
 
     let mut links = Vec::new();
     links.push(self_link);
 
     let actor = WebFinger {
-        subject: format!("acct:{}@{}", handle, domain),
-        links
+        subject: Some(format!("acct:{}@{}", handle, domain)),
+        aliases: None,
+        properties: None,
+        links: Some(links)
     };
 
     let body = json!(actor).to_string();
