@@ -5,9 +5,10 @@ use crate::server::{request::IncomingRequest, response::{send, ResponseResult}};
 #[derive(Serialize, Deserialize)]
 struct Actor {
     url: String,
-    display_name: String,
+    name: String,
     handle: String,
-    host: String
+    summary: String,
+    host: String,
 }
 
 pub async fn post(req: IncomingRequest<'_>) -> ResponseResult {
@@ -16,9 +17,9 @@ pub async fn post(req: IncomingRequest<'_>) -> ResponseResult {
     let form: Actor = serde_html_form::from_str(&text)?;
 
     req.db.execute(
-        "INSERT INTO followed_actors (url, display_name, handle)
-        VALUES (?1, ?2, ?3)",
-        (&form.url, &form.display_name, &form.handle)
+        "INSERT INTO followed_actors (url, name, handle, summary, host)
+        VALUES (?1, ?2, ?3, ?4, ?5)",
+        (&form.url, &form.name, &form.handle, &form.summary, &form.host)
     )?;
 
     let res = "<button disabled>Followed!</button>".to_string();

@@ -9,9 +9,14 @@
     <form action=/follow method=POST hx-post=/follow hx-swap=outerHTML>
       <input name=url type=hidden value="{{ user.url }}">
       <input name=handle type=hidden value="{{ user.handle }}">
-      <input name=display_name type=hidden value="{{ user.url }}">
+      <input name=name type=hidden value="{{ user.name }}">
+      <input name=summary type=hidden value="{{ user.summary }}">
       <input name=host type=hidden value="{{ user.host }}">
+      {% if user.is_followed %}
+      <button disabled>Followed</button>
+      {% else %}
       <button>Follow</button>
+      {% endif %}
     </form>
 
   </header>

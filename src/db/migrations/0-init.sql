@@ -15,9 +15,11 @@ CREATE TABLE feeds (
 
 CREATE TABLE followed_actors (
   followed_actor_id INTEGER PRIMARY key,
-  display_name TEXT NOT NULL,
+  name TEXT NOT NULL,
   handle TEXT NOT NULL,
-  url TEXT NOT NULL
+  host TEXT NOT NULL,
+  url TEXT NOT NULL UNIQUE,
+  summary TEXT
 ) STRICT;
 
 CREATE TABLE globals (
