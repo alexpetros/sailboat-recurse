@@ -1,7 +1,8 @@
 use minijinja::context;
 use serde::Serialize;
 
-use crate::server::{request::IncomingRequest, response::{send, ResponseResult}};
+use crate::server::request::IncomingRequest;
+use crate::server::response::{ResponseResult, send};
 
 #[derive(Serialize)]
 struct Actor {

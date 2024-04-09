@@ -1,7 +1,6 @@
-use crate::server::response::ResponseResult;
-
 use crate::server::request::IncomingRequest;
 use crate::server::response;
+use crate::server::response::ResponseResult;
 
 pub async fn get(req: IncomingRequest<'_>) -> ResponseResult {
     let path = req.uri().path();

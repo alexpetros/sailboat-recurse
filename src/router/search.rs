@@ -8,7 +8,8 @@ use crate::activitypub::actors::get_remote_actor;
 use crate::activitypub::{get_webfinger, LinkType};
 use crate::server::error::{bad_request, map_bad_gateway, ServerError};
 use crate::server::response::send;
-use crate::server::{request::IncomingRequest, response::ResponseResult};
+use crate::server::{response::ResponseResult};
+use crate::server::request::IncomingRequest;
 
 #[derive(Deserialize)]
 struct Query {

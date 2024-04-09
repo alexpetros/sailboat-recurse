@@ -21,7 +21,7 @@ use tracing::debug;
 use tracing::warn;
 use tracing::error;
 
-use crate::server::request::IncomingRequest;
+use crate::server::request::ServerRequest;
 use crate::server::context::GlobalContext;
 use crate::server::response;
 
@@ -50,7 +50,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Re
         db.query_row("SELECT value FROM globals WHERE key = 'domain'", (), |row| { row.get(0) })?
     };
 
-    let req = IncomingRequest::new(req, &g_ctx, db, domain)?;
+    let req = ServerRequest::new(req, &g_ctx, db, domain)?;
     
     // Serve static files separately
     if req.uri().path().starts_with("/static") {

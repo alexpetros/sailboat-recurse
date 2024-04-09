@@ -5,7 +5,7 @@ use crate::queries::get_posts_in_feed;
 use tracing::log::debug;
 use serde::Deserialize;
 use serde::Serialize;
-use crate::server::request::IncomingRequest;
+use crate::server::request::{IncomingRequest};
 use crate::server::response::{ResponseResult, send};
 
 #[derive(Debug, Serialize)]

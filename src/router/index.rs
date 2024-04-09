@@ -1,5 +1,6 @@
-use crate::queries::get_posts_in_feed;
 use minijinja::context;
+
+use crate::queries::get_posts_in_feed;
 use crate::server::request::IncomingRequest;
 use crate::server::response;
 use crate::server::response::ResponseResult;

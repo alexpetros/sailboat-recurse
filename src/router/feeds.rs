@@ -15,7 +15,7 @@ use serde_json::json;
 use crate::activitypub::{self, Actor};
 
 use crate::server::error::{self, bad_request};
-use crate::server::request::IncomingRequest;
+use crate::server::request::{IncomingRequest};
 use crate::server::response::{ResponseResult, send};
 
 pub mod new;

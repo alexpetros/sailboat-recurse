@@ -1,14 +1,14 @@
-use hyper::header::{HeaderValue, LOCATION};
-use minijinja::context;
+use http_body_util::{BodyExt, Empty, Full};
+use http_body_util::combinators::BoxBody;
 use hyper::{Response, StatusCode};
 use hyper::body::Bytes;
-use http_body_util::combinators::BoxBody;
-use http_body_util::{BodyExt, Empty, Full};
-use crate::server::request::IncomingRequest;
+use hyper::header::{HeaderValue, LOCATION};
+use minijinja::context;
+
 use crate::server::error::ServerError;
+use crate::server::request::IncomingRequest;
 
-pub type ResponseResult = std::result::Result<Response<BoxBody<Bytes, hyper::Error>>, ServerError>;
-
+pub type ResponseResult = Result<Response<BoxBody<Bytes, hyper::Error>>, ServerError>;
 
 pub fn empty() -> BoxBody<Bytes, hyper::Error> {
     Empty::<Bytes>::new().map_err(|never| match never {}).boxed()
@@ -27,7 +27,7 @@ pub fn redirect(path: &str) -> ResponseResult {
     let location_val =  HeaderValue::from_str(path).map_err(|_| {
         ServerError {
             prefix: "[HEADER ERROR]",
-            message: "Invalid Redicect Provided".to_owned(),
+            message: "Invalid Redirect Provided".to_owned(),
             status_code: StatusCode:: INTERNAL_SERVER_ERROR
         }
     })?;

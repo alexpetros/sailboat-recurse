@@ -8,7 +8,7 @@ use serde_json::json;
 use crate::activitypub::WebFinger;
 use crate::activitypub::WebFingerLink;
 use crate::server::error::bad_request;
-use crate::server::request::IncomingRequest;
+use crate::server::request::{IncomingRequest};
 use crate::server::response::send_status;
 use crate::server::response::ResponseResult;
 

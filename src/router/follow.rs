@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::server::{request::IncomingRequest, response::{send, ResponseResult}};
+use crate::server::request::IncomingRequest;
+use crate::server::response::{ResponseResult, send};
 
 #[derive(Serialize, Deserialize)]
 struct Actor {
