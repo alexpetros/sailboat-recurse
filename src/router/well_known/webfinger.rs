@@ -7,7 +7,6 @@ use serde::Deserialize;
 use serde_json::json;
 use crate::activitypub::WebFinger;
 use crate::activitypub::WebFingerLink;
-use crate::server::context::Context;
 use crate::server::error::bad_request;
 use crate::server::request::IncomingRequest;
 use crate::server::response::send_status;
@@ -21,7 +20,7 @@ struct Query {
     resource: String
 }
 
-pub async fn get(req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
+pub async fn get(req: IncomingRequest<'_>) -> ResponseResult {
     let query = req.uri().query().ok_or(bad_request("Missing query parameter"))?;
 
     let resource = serde_html_form::from_str::<Query>(query)
@@ -47,7 +46,7 @@ pub async fn get(req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
         return send_status(StatusCode::NOT_FOUND)
     }
 
-    let feed = ctx.db.query_row("
+    let feed = req.db.query_row("
         SELECT feed_id
         FROM feeds
         WHERE handle = ?1

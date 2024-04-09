@@ -27,7 +27,7 @@ pub struct WebFingerLink {
     pub href: Option<String>,
 }
 
-// Can we we do a URI-formatted string property? Feels like yes
+// Can we do a URI-formatted string property? Feels like yes
 // https://datatracker.ietf.org/doc/html/rfc7033
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WebFinger {

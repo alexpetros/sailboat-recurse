@@ -1,7 +1,7 @@
 use minijinja::context;
 use serde::Serialize;
 
-use crate::server::{context::Context, request::IncomingRequest, response::{send, ResponseResult}};
+use crate::server::{request::IncomingRequest, response::{send, ResponseResult}};
 
 #[derive(Serialize)]
 struct Actor {
@@ -10,8 +10,8 @@ struct Actor {
     handle: String,
 }
 
-pub async fn get(_req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
-    let mut query = ctx.db.prepare("SELECT url, display_name, handle FROM followed_actors")?;
+pub async fn get(req: IncomingRequest<'_>) -> ResponseResult {
+    let mut query = req.db.prepare("SELECT url, display_name, handle FROM followed_actors")?;
     let rows = query.query_map((), |row| {
         let actor = Actor {
             url: row.get(0)?,
@@ -27,6 +27,6 @@ pub async fn get(_req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
     }
 
     let context = context! { following };
-    let body = ctx.render("following.html", context);
+    let body = req.render("following.html", context);
     Ok(send(body))
 }

@@ -12,7 +12,6 @@ mod following;
 use hyper::header::HOST;
 use crate::server::error::ServerError;
 use crate::router::well_known::webfinger;
-use crate::server::context::Context;
 use crate::server::response::ResponseResult;
 use crate::sqlite::get_conn;
 use std::sync::Arc;
@@ -44,19 +43,18 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Re
 
     let db_path = std::env::var("DB_PATH").unwrap_or(DEFAULT_DB.to_owned());
     let db = get_conn(&db_path)?;
-    let ctx = Context::new(&g_ctx, db)?;
 
     let domain = if g_ctx.domain.is_some() {
         g_ctx.domain.clone().unwrap()
     } else {
-        ctx.db.query_row("SELECT value FROM globals WHERE key = 'domain'", (), |row| { row.get(0) })?
+        db.query_row("SELECT value FROM globals WHERE key = 'domain'", (), |row| { row.get(0) })?
     };
 
-    let req = IncomingRequest::new(req, domain);
-
+    let req = IncomingRequest::new(req, &g_ctx, db, domain)?;
+    
     // Serve static files separately
     if req.uri().path().starts_with("/static") {
-        return serve_static::get(req, ctx).await;
+        return serve_static::get(req).await;
     }
 
     // Remove the query parameter for routing purposes
@@ -69,25 +67,25 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Re
     let sub_routes: Vec<&str> = without_query.split("/").collect();
 
     match (req.method(), &sub_routes[1..]) {
-        (GET, [""]) => index::get(req, ctx).await,
-        (GET, ["debug"]) => debug::get(req, ctx),
+        (GET, [""]) => index::get(req).await,
+        (GET, ["debug"]) => debug::get(req),
 
-        (GET, ["feeds", "new"]) => feeds::new::get(req, ctx),
-        (GET, ["feeds", ..]) => feeds::get(req, ctx).await,
-        (POST, ["feeds"]) => feeds::post(req, ctx).await,
+        (GET, ["feeds", "new"]) => feeds::new::get(req),
+        (GET, ["feeds", ..]) => feeds::get(req).await,
+        (POST, ["feeds"]) => feeds::post(req).await,
 
-        (POST, ["search", ..]) => search::post(req, ctx).await,
+        (POST, ["search", ..]) => search::post(req).await,
 
-        (POST, ["posts"]) => posts::post(req, ctx).await,
-        (DELETE, ["posts", ..]) => posts::delete(req, ctx),
+        (POST, ["posts"]) => posts::post(req).await,
+        (DELETE, ["posts", ..]) => posts::delete(req),
 
-        (POST, ["follow"]) => follow::post(req, ctx).await,
-        (GET, ["following"]) => following::get(req, ctx).await,
+        (POST, ["follow"]) => follow::post(req).await,
+        (GET, ["following"]) => following::get(req).await,
 
-        (GET, [".well-known", "webfinger"]) => webfinger::get(req, ctx).await,
+        (GET, [".well-known", "webfinger"]) => webfinger::get(req).await,
 
-        (GET, ["healthcheck"]) => healthcheck::get(req, ctx),
-        _ => response::not_found(req, ctx)
+        (GET, ["healthcheck"]) => healthcheck::get(req),
+        _ => response::not_found(req)
     }
 }
 

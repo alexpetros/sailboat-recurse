@@ -57,7 +57,7 @@ async fn main() {
 
     // Right now this only available as a debug feature, but potentially available for more soon
     if cfg!(debug_assertions) {
-        g_ctx.domain = std::env::var("SB_DOMAIN").ok();
+        g_ctx.domain = env::var("SB_DOMAIN").ok();
         if g_ctx.domain.is_none() {
             println!("Dev mode running but no global callback domain is specified. Remote servers will not be able to call back.");
         }
@@ -71,7 +71,7 @@ async fn main() {
     // TODO upgrade this to handle interrupts
     match signal::ctrl_c().await {
         Ok(()) => {
-            info!("Receieved shutdown signal, waiting for requests to end.");
+            info!("Received shutdown signal, waiting for requests to end.");
             // TODO actually exit gracefully
             std::process::exit(0);
             // tracker.close();

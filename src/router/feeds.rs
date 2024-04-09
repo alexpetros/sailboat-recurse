@@ -15,7 +15,6 @@ use serde_json::json;
 use crate::activitypub::{self, Actor};
 
 use crate::server::error::{self, bad_request};
-use crate::server::context::Context;
 use crate::server::request::IncomingRequest;
 use crate::server::response::{ResponseResult, send};
 
@@ -40,7 +39,7 @@ struct NewFeed {
 static LONG_ACCEPT_HEADER: &str = "application/ld+json;profile=“https://www.w3.org/ns/activitystreams";
 static SHORT_ACCEPT_HEADER: &str = "application/activity+json";
 
-pub async fn get(req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
+pub async fn get(req: IncomingRequest<'_>) -> ResponseResult {
     let feed_param = req.uri().path().split("/")
         .nth(2)
         .ok_or(error::bad_request("Missing feed ID"))?;
@@ -50,7 +49,7 @@ pub async fn get(req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
         Some((f, _)) => f
     }.parse::<i64>().map_err(|_| { bad_request("Invalid feed ID") })?;
 
-    let feed = ctx.db
+    let feed = req.db
         .query_row("
         SELECT feed_id, handle, display_name, internal_name, private_key_pem
         FROM feeds where feed_id = ?1"
@@ -77,20 +76,20 @@ pub async fn get(req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
     // serve the JSON representation of the feed
     // TODO actually parse the header properly
     match request_header {
-        None => serve_html_feed(req, ctx, feed).await,
+        None => serve_html_feed(req, feed).await,
         Some(h) => {
             let h = h.to_str().unwrap_or("");
             if h.contains(LONG_ACCEPT_HEADER) || h.contains(SHORT_ACCEPT_HEADER) {
                 debug!("Found JSON header, Serving json feed");
-                serve_json_feed(req, ctx, feed)
+                serve_json_feed(req, feed)
             } else {
-                serve_html_feed(req, ctx, feed).await
+                serve_html_feed(req, feed).await
             }
         }
     }
 }
 
-pub async fn post(req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
+pub async fn post(req: IncomingRequest<'_>) -> ResponseResult {
     let req = req.get_body().await?;
     let text = req.text()?;
     let form: NewFeed = serde_html_form::from_str(&text)?;
@@ -100,21 +99,21 @@ pub async fn post(req: IncomingRequest, ctx: Context<'_>) -> ResponseResult {
     let pkey = PKey::from_rsa(rsa).unwrap().private_key_to_pem_pkcs8().unwrap();
     let pkey = String::from_utf8(pkey).unwrap();
 
-    ctx.db.execute(
+    req.db.execute(
         "INSERT INTO feeds (handle, display_name, internal_name, private_key_pem)
         VALUES (?1, ?2, ?3, ?4)",
         (&form.handle, &form.display_name, &form.internal_name, &pkey)
     )?;
 
-    let id = ctx.db.last_insert_rowid();
+    let id = req.db.last_insert_rowid();
     let path = format!("/feeds/{}", id);
 
     redirect(&path)
 }
 
-async fn serve_html_feed(_req: IncomingRequest, ctx: Context<'_>, feed: Feed) -> ResponseResult {
+async fn serve_html_feed(req: IncomingRequest<'_>, feed: Feed) -> ResponseResult {
     // let domain = req.domain;
-    let posts = get_posts_in_feed(&ctx.db, feed.feed_id)?;
+    let posts = get_posts_in_feed(&req.db, feed.feed_id)?;
     let context = context! { feed => feed, posts => posts };
 
     // let req_body = get_remote_actor(&domain, feed.feed_id, &feed.private_key_pem)
@@ -122,11 +121,11 @@ async fn serve_html_feed(_req: IncomingRequest, ctx: Context<'_>, feed: Feed) ->
     //     .unwrap_or_else(|e| {  e.message });
     // let context = context! { req_body => req_body, ..context };
 
-    let body = ctx.render("feed.html", context);
+    let body = req.render("feed.html", context);
     Ok(response::send(body))
 }
 
-fn serve_json_feed(req: IncomingRequest, _ctx: Context<'_>, feed: Feed) -> ResponseResult {
+fn serve_json_feed(req: IncomingRequest<'_>, feed: Feed) -> ResponseResult {
     let domain = &req.domain;
 
     let id = format!("https://{}/feeds/{}", domain, feed.feed_id);
