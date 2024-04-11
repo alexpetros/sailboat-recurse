@@ -1,9 +1,9 @@
-use crate::server::request::IncomingRequest;
-use crate::server::response;
-use crate::server::response::ResponseResult;
+use crate::server::server_request::IncomingRequest;
+use crate::server::server_response;
+use crate::server::server_response::ServerResponse;
 
-pub fn get (_req: IncomingRequest<'_>) -> ResponseResult {
-    response::ok()
+pub fn get (_req: IncomingRequest<'_>) -> ServerResponse {
+    server_response::ok()
 }
 
 

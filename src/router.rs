@@ -12,7 +12,7 @@ mod following;
 use hyper::header::HOST;
 use crate::server::error::ServerError;
 use crate::router::well_known::webfinger;
-use crate::server::response::ResponseResult;
+use crate::server::server_response::ServerResponse;
 use crate::sqlite::get_conn;
 use std::sync::Arc;
 use hyper::{Method, Request};
@@ -21,9 +21,9 @@ use tracing::debug;
 use tracing::warn;
 use tracing::error;
 
-use crate::server::request::ServerRequest;
+use crate::server::server_request::ServerRequest;
 use crate::server::context::GlobalContext;
-use crate::server::response;
+use crate::server::server_response;
 
 pub const GET: &Method = &Method::GET;
 pub const POST: &Method = &Method::POST;
@@ -31,7 +31,7 @@ pub const DELETE: &Method = &Method::DELETE;
 
 const DEFAULT_DB: &str = "./sailboat.db";
 
-pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
+pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> ServerResponse {
     let path = req.uri().path();
     let host = req.headers().get(HOST)
         .map(|h| h.to_str().unwrap_or("UNKNOWN"))
@@ -85,21 +85,21 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Re
         (GET, [".well-known", "webfinger"]) => webfinger::get(req).await,
 
         (GET, ["healthcheck"]) => healthcheck::get(req),
-        _ => response::not_found(req)
+        _ => server_response::not_found(req)
     }
 }
 
-fn log_warn_and_send_specific_message(err: ServerError) -> ResponseResult {
+fn log_warn_and_send_specific_message(err: ServerError) -> ServerResponse {
     warn!("{}", err);
-    response::send_status_and_message(err)
+    server_response::send_status_and_message(err)
 }
 
-fn log_error_and_send_generic_message(err: ServerError) -> ResponseResult {
+fn log_error_and_send_generic_message(err: ServerError) -> ServerResponse {
     error!("{}", err);
-    response::send_status(err.status_code)
+    server_response::send_status(err.status_code)
 }
 
-pub async fn serve(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> ResponseResult {
+pub async fn serve(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> ServerResponse {
     let result = router(req, g_ctx).await;
     if let Err(err) = result {
         // 4xx error messages are passed onto users, the rest aren't

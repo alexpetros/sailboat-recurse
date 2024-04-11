@@ -1,16 +1,16 @@
 use tracing::debug;
 use tracing::warn;
 use crate::activitypub::LinkType;
-use crate::server::response;
+use crate::server::server_response;
 use hyper::StatusCode;
 use serde::Deserialize;
 use serde_json::json;
 use crate::activitypub::WebFinger;
 use crate::activitypub::WebFingerLink;
 use crate::server::error::bad_request;
-use crate::server::request::{IncomingRequest};
-use crate::server::response::send_status;
-use crate::server::response::ResponseResult;
+use crate::server::server_request::{IncomingRequest};
+use crate::server::server_response::send_status;
+use crate::server::server_response::ServerResponse;
 
 #[derive(Debug, Deserialize)]
 struct profile { profile_id: i64, }
@@ -20,7 +20,7 @@ struct Query {
     resource: String
 }
 
-pub async fn get(req: IncomingRequest<'_>) -> ResponseResult {
+pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
     let query = req.uri().query().ok_or(bad_request("Missing query parameter"))?;
 
     let resource = serde_html_form::from_str::<Query>(query)
@@ -77,5 +77,5 @@ pub async fn get(req: IncomingRequest<'_>) -> ResponseResult {
     };
 
     let body = json!(actor).to_string();
-    Ok(response::send(body))
+    Ok(server_response::send(body))
 }

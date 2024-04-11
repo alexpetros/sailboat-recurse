@@ -7,9 +7,9 @@ use tracing::warn;
 use crate::activitypub::actors::get_remote_actor;
 use crate::activitypub::{get_webfinger, LinkType};
 use crate::server::error::{bad_request, map_bad_gateway, ServerError};
-use crate::server::response::send;
-use crate::server::{response::ResponseResult};
-use crate::server::request::IncomingRequest;
+use crate::server::server_response::send;
+use crate::server::{server_response::ServerResponse};
+use crate::server::server_request::IncomingRequest;
 
 #[derive(Deserialize)]
 struct Query {
@@ -27,7 +27,7 @@ struct Actor {
     is_followed: bool,
 }
 
-// TODO don't just Actor 1, obviously
+// TODO don't just use Actor 1, obviously
 const PROFILE_ID: i64 = 1;
 
 async fn get_or_search_for_actor(db: &mut Connection, domain: &str, handle: &str, host: &str) -> Result<Option<Actor>, ServerError> {
@@ -86,7 +86,7 @@ async fn get_or_search_for_actor(db: &mut Connection, domain: &str, handle: &str
     Ok(Some(actor))
 }
 
-pub async fn post(req: IncomingRequest<'_>) -> ResponseResult {
+pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
     let mut req = req.get_body().await?;
     let text = req.text()?;
 

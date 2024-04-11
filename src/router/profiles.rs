@@ -1,5 +1,5 @@
 use hyper::StatusCode;
-use crate::server::response::send_status;
+use crate::server::server_response::send_status;
 use hyper::header::HeaderValue;
 use hyper::header::CONTENT_TYPE;
 use tracing::log::debug;
@@ -10,13 +10,13 @@ use openssl::rsa::Rsa;
 use hyper::header::ACCEPT;
 use minijinja::context;
 use crate::queries::get_posts_in_profile;
-use crate::server::response::{self, redirect};
+use crate::server::server_response::{self, redirect};
 use serde_json::json;
 use crate::activitypub::{self, Actor};
 
 use crate::server::error::{self, bad_request};
-use crate::server::request::{IncomingRequest};
-use crate::server::response::{ResponseResult, send};
+use crate::server::server_request::{IncomingRequest};
+use crate::server::server_response::{ServerResponse, send};
 
 pub mod new;
 
@@ -39,7 +39,7 @@ struct NewProfile {
 static LONG_ACCEPT_HEADER: &str = "application/ld+json;profile=“https://www.w3.org/ns/activitystreams";
 static SHORT_ACCEPT_HEADER: &str = "application/activity+json";
 
-pub async fn get(req: IncomingRequest<'_>) -> ResponseResult {
+pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
     let profile_param = req.uri().path().split("/")
         .nth(2)
         .ok_or(error::bad_request("Missing profile ID"))?;
@@ -89,7 +89,7 @@ pub async fn get(req: IncomingRequest<'_>) -> ResponseResult {
     }
 }
 
-pub async fn post(req: IncomingRequest<'_>) -> ResponseResult {
+pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
     let req = req.get_body().await?;
     let text = req.text()?;
     let form: NewProfile = serde_html_form::from_str(&text)?;
@@ -111,7 +111,7 @@ pub async fn post(req: IncomingRequest<'_>) -> ResponseResult {
     redirect(&path)
 }
 
-async fn serve_html_profile(req: IncomingRequest<'_>, profile: Profile) -> ResponseResult {
+async fn serve_html_profile(req: IncomingRequest<'_>, profile: Profile) -> ServerResponse {
     // let domain = req.domain;
     let posts = get_posts_in_profile(&req.db, profile.profile_id)?;
     let context = context! { profile => profile, posts => posts };
@@ -122,10 +122,10 @@ async fn serve_html_profile(req: IncomingRequest<'_>, profile: Profile) -> Respo
     // let context = context! { req_body => req_body, ..context };
 
     let body = req.render("profile.html", context);
-    Ok(response::send(body))
+    Ok(server_response::send(body))
 }
 
-fn serve_json_profile(req: IncomingRequest<'_>, profile: Profile) -> ResponseResult {
+fn serve_json_profile(req: IncomingRequest<'_>, profile: Profile) -> ServerResponse {
     let domain = &req.domain;
 
     let id = format!("https://{}/profiles/{}", domain, profile.profile_id);
