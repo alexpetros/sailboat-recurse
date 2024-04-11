@@ -11,7 +11,7 @@ pub struct ServerError {
     pub status_code: StatusCode
 }
 
-impl std::error::Error for ServerError {}
+impl Error for ServerError {}
 
 impl Display for ServerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -66,6 +66,14 @@ impl From<ErrorStack> for ServerError {
             message: err.to_string(),
             status_code: StatusCode::BAD_REQUEST
         }
+    }
+}
+
+pub fn map_bad_request(e: impl Error) -> ServerError {
+    ServerError {
+        prefix: "[BAD REQUEST]",
+        message: format!("{:?}", e),
+        status_code: StatusCode::BAD_REQUEST
     }
 }
 

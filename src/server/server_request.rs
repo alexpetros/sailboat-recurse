@@ -4,9 +4,10 @@ use hyper::body::{Bytes, Incoming};
 use http_body_util::BodyExt;
 use minijinja::{context, Value};
 use rusqlite::Connection;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use tracing::log::warn;
 use crate::server::context::GlobalContext;
-use crate::server::error::ServerError;
+use crate::server::error::{map_bad_request, ServerError};
 
 use super::error::{body_not_utf8, body_too_large};
 
@@ -54,32 +55,6 @@ impl<'a, T> ServerRequest<'a, T> {
     }
 }
 
-impl<'a> ServerRequest<'a, Bytes> {
-    pub fn text(&self) -> Result<String, ServerError> {
-        let body = self.body().to_vec();
-        String::from_utf8(body).map_err(|_| { body_not_utf8() })
-    }
-}
-
-impl<'a> ServerRequest<'a, Incoming> {
-    pub async fn get_body(self) -> Result<ServerRequest<'a, Bytes>, ServerError> {
-        let (parts, body) = self.request.into_parts();
-        let body_bytes = http_body_util::Limited::new(body, 1024 * 64);
-
-        let bytes = body_bytes.collect().await
-            .map(|r| { r.to_bytes() })
-            .map_err(|_| { body_too_large() })?;
-
-        let request = hyper::Request::from_parts(parts, bytes);
-        let domain = self.domain;
-        let global = self.global;
-        let db = self.db;
-        let locals = self.locals;
-
-        Ok(ServerRequest { request, global, db, domain, locals })
-    }
-}
-
 impl<'a, T> Deref for ServerRequest<'a, T> {
     type Target = hyper::Request<T>;
     fn deref(&self) -> &Self::Target {
@@ -109,5 +84,55 @@ impl<'a, T> ServerRequest<'a, T> {
 
         let locals = Locals { profiles };
         Ok(Self { request, global: g_ctx.clone(), db, domain, locals })
+    }
+}
+
+impl<'a> ServerRequest<'a, Incoming> {
+    pub async fn get_body(self) -> Result<ServerRequest<'a, Bytes>, ServerError> {
+        let (parts, body) = self.request.into_parts();
+        let body_bytes = http_body_util::Limited::new(body, 1024 * 64);
+
+        let bytes = body_bytes.collect().await
+            .map(|r| { r.to_bytes() })
+            .map_err(|_| { body_too_large() })?;
+
+        let request = hyper::Request::from_parts(parts, bytes);
+        let domain = self.domain;
+        let global = self.global;
+        let db = self.db;
+        let locals = self.locals;
+
+        Ok(ServerRequest { request, global, db, domain, locals })
+    }
+
+    pub async fn to_text(self) -> Result<ServerRequest<'a, String>, ServerError> {
+        self.get_body().await?.to_text()
+    }
+}
+
+// Not sure that I even need this intermediate state at all right now
+// But I think it will become relevant for uploading images
+impl<'a> ServerRequest<'a, Bytes> {
+    pub fn to_text(self) -> Result<ServerRequest<'a, String>, ServerError> {
+        let (parts, body) = self.request.into_parts();
+        let str = String::from_utf8(body.to_vec()).map_err(|_| { body_not_utf8() })?;
+        let request = hyper::Request::from_parts(parts, str);
+        let domain = self.domain;
+        let global = self.global;
+        let db = self.db;
+        let locals = self.locals;
+
+        Ok(ServerRequest { request, global, db, domain, locals })
+    }
+}
+
+impl<'a> ServerRequest<'a, String> {
+    pub fn get_form_data<T>(&'a self) -> Result<T, ServerError> where T: Deserialize<'a> {
+        let str = self.body();
+        serde_html_form::from_str::<T>(str)
+            .map_err(|e| {
+                warn!("failed to deserialize request {}", &self.body());
+                map_bad_request(e)
+            })
     }
 }

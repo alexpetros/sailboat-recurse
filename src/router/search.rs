@@ -88,11 +88,10 @@ async fn get_or_search_for_actor(db: &mut Connection, domain: &str, handle: &str
 }
 
 pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
-    let mut req = req.get_body().await?;
-    let text = req.text()?;
-
-    let query = serde_html_form::from_str::<Query>(&text)?.q;
-    let mut splits = query.splitn(3, '@').peekable();
+    let mut req = req.to_text().await?;
+    let query: Query = req.get_form_data()?;
+    let username = query.q;
+    let mut splits = username.splitn(3, '@').peekable();
 
     splits.next_if_eq(&"");
     let handle = splits.next().ok_or(bad_request("Missing user name"))?.trim();

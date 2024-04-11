@@ -13,9 +13,8 @@ struct Actor {
 }
 
 pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
-    let req = req.get_body().await?;
-    let text = req.text()?;
-    let form: Actor = serde_html_form::from_str(&text)?;
+    let req = req.to_text().await?;
+    let form: Actor = req.get_form_data()?;
 
     req.db.execute(
         "INSERT INTO followed_actors (url, name, handle, summary, host)

@@ -22,9 +22,8 @@ struct PostForm {
 }
 
 pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
-    let req = req.get_body().await?;
-    let text = req.text()?;
-    let form: PostForm = serde_html_form::from_str(&text)?;
+    let req = req.to_text().await?;
+    let form: PostForm = req.get_form_data()?;
     let profile_id: i64 = form.profile_id.parse().map_err(|_| { body_not_utf8() })?;
     req.db.execute(
         "INSERT INTO posts (profile_id, content) VALUES (?1, ?2)",

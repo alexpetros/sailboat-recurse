@@ -90,9 +90,8 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
 }
 
 pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
-    let req = req.get_body().await?;
-    let text = req.text()?;
-    let form: NewProfile = serde_html_form::from_str(&text)?;
+    let req = req.to_text().await?;
+    let form: NewProfile = req.get_form_data()?;
 
     // TODO encrypt this
     let rsa = Rsa::generate(2048).unwrap();
