@@ -1,7 +1,7 @@
 use crate::server::error;
 use crate::server::error::body_not_utf8;
 use minijinja::context;
-use crate::queries::get_posts_in_feed;
+use crate::queries::get_posts_in_profile;
 use tracing::log::debug;
 use serde::Deserialize;
 use serde::Serialize;
@@ -17,7 +17,7 @@ struct Post {
 
 #[derive(Debug, Deserialize)]
 struct PostForm {
-    feed_id: String,
+    profile_id: String,
     content: String
 }
 
@@ -25,14 +25,14 @@ pub async fn post(req: IncomingRequest<'_>) -> ResponseResult {
     let req = req.get_body().await?;
     let text = req.text()?;
     let form: PostForm = serde_html_form::from_str(&text)?;
-    let feed_id: i64 = form.feed_id.parse().map_err(|_| { body_not_utf8() })?;
+    let profile_id: i64 = form.profile_id.parse().map_err(|_| { body_not_utf8() })?;
     req.db.execute(
-        "INSERT INTO posts (feed_id, content) VALUES (?1, ?2)",
-        (&feed_id, &form.content)
+        "INSERT INTO posts (profile_id, content) VALUES (?1, ?2)",
+        (&profile_id, &form.content)
     )?;
 
-    let posts = get_posts_in_feed(&req.db, feed_id)?;
-    let body = req.render_block("feed.html", "feed", context! { posts });
+    let posts = get_posts_in_profile(&req.db, profile_id)?;
+    let body = req.render_block("profile.html", "profile", context! { posts });
     Ok(send(body))
 }
 

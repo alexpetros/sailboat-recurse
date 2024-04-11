@@ -11,14 +11,14 @@ use crate::server::error::ServerError;
 use super::error::{body_not_utf8, body_too_large};
 
 #[derive(Serialize)]
-struct Feed {
-    feed_id: i64,
+struct Profile {
+    profile_id: i64,
     internal_name: String,
 }
 
 #[derive(Serialize)]
 struct Locals {
-    feeds: Vec<Feed>,
+    profiles: Vec<Profile>,
 }
 
 const ENV: &str = if cfg!(debug_assertions) { "debug" } else { "prod" };
@@ -36,7 +36,7 @@ pub struct ServerRequest<'a, T> {
 impl<'a, T> ServerRequest<'a, T> {
     fn make_context(&self, local_values: Value) -> Value {
         let global_values = context! { env => ENV };
-        let request_values = context! { feeds => self.locals.feeds };
+        let request_values = context! { profiles => self.locals.profiles };
         context! { ..local_values, ..request_values, ..global_values }
     }
 
@@ -89,25 +89,25 @@ impl<'a, T> Deref for ServerRequest<'a, T> {
 
 impl<'a, T> ServerRequest<'a, T> {
     pub fn new(request: hyper::Request<T>, g_ctx: &Arc<GlobalContext<'a>>, db: Connection, domain: String) -> Result<Self, ServerError> {
-        let feeds = {
-            let mut query = db.prepare("SELECT feed_id, internal_name FROM feeds")?;
+        let profiles = {
+            let mut query = db.prepare("SELECT profile_id, internal_name FROM profiles")?;
             let rows = query.query_map((), |row| {
-                let feed = Feed {
-                    feed_id: row.get(0)?,
+                let profiles = Profile {
+                    profile_id: row.get(0)?,
                     internal_name: row.get(1)?,
                 };
-                Ok(feed)
+                Ok(profiles)
             })?;
 
-            let mut feeds = Vec::new();
-            for feed in rows {
-                feeds.push(feed?);
+            let mut profiles = Vec::new();
+            for profile in rows {
+                profiles.push(profile?);
             }
 
-            feeds
+            profiles
         };
 
-        let locals = Locals { feeds };
+        let locals = Locals { profiles };
         Ok(Self { request, global: g_ctx.clone(), db, domain, locals })
     }
 }

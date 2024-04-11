@@ -28,8 +28,8 @@ button.delete {
   display: block;
 }
 </style>
-<h1>{{ feed.internal_name }}</h1>
-<div>@{{ feed.handle }}</div>
+<h1>{{ profile.internal_name }}</h1>
+<div>@{{ profile.handle }}</div>
 
 <section class=newpost>
 <h2>Create</h2>
@@ -37,10 +37,10 @@ button.delete {
       method=post
       hx-post="/posts"
       hx-swap=outerHTML
-      hx-target="section.feed"
+      hx-target="section.profile"
       hx-on::after-request="this.reset()">
-  <input type=hidden name=feed_id value="{{ feed.feed_id }}">
-  <textarea name="content" placeholder="{{ feed.display_name }} is..."></textarea>
+  <input type=hidden name=profile_id value="{{ profile.profile_id }}">
+  <textarea name="content" placeholder="{{ profile.display_name }} is..."></textarea>
   <div><button>Post!</button></div>
 </form>
 </section>
@@ -48,9 +48,9 @@ button.delete {
 <h2>Body</h2>
 <p style="line-break: anywhere">{{ req_body }}</p>
 
-{% block feed %}
-<section class=feed>
-<h2>Feed</h2>
+{% block profile %}
+<section class=profile>
+<h2>profile</h2>
 {% for post in posts %}
 <article class=post>
   <div class=userinfo>
@@ -61,10 +61,10 @@ button.delete {
     <button class=delete
             hx-delete="/posts/{{ post.post_id }}"
             hx-target="closest article"
-              hx-swap="outerHTML"
-              hx-confirm="Are you sure you want to delete this post?"
-              >Delete
-      </button>
+            hx-swap="outerHTML"
+            hx-confirm="Are you sure you want to delete this post?"
+    >Delete
+    </button>
     </div>
     <p>{{ post.content }}</p>
     <footer>{{ post.created_at }}</footer>

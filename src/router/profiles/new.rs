@@ -4,6 +4,6 @@ use crate::server::request::IncomingRequest;
 use crate::server::response::{self, ResponseResult};
 
 pub fn get(req: IncomingRequest<'_>) -> ResponseResult {
-    let body = req.render("feeds/new.html", context! {});
+    let body = req.render("profiles/new.html", context! {});
     Ok(response::send(body))
 }

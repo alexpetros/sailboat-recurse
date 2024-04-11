@@ -13,7 +13,7 @@ use crate::server::response::send_status;
 use crate::server::response::ResponseResult;
 
 #[derive(Debug, Deserialize)]
-struct Feed { feed_id: i64, }
+struct profile { profile_id: i64, }
 
 #[derive(Debug, Deserialize)]
 struct Query {
@@ -46,16 +46,16 @@ pub async fn get(req: IncomingRequest<'_>) -> ResponseResult {
         return send_status(StatusCode::NOT_FOUND)
     }
 
-    let feed = req.db.query_row("
-        SELECT feed_id
-        FROM feeds
+    let profile = req.db.query_row("
+        SELECT profile_id
+        FROM profiles
         WHERE handle = ?1
     ", [ handle ], |row| {
-        let feed = Feed { feed_id: row.get(0)? };
-        Ok(feed)
+        let profile = profile { profile_id: row.get(0)? };
+        Ok(profile)
     });
 
-    let feed = match feed {
+    let profile = match profile {
         Ok(x) => x,
         Err(_) => return send_status(StatusCode::NOT_FOUND)
     };
@@ -63,7 +63,7 @@ pub async fn get(req: IncomingRequest<'_>) -> ResponseResult {
     let self_link = WebFingerLink {
         rel: "self".to_owned(),
         link_type: Some(LinkType::ActivityJson),
-        href: Some(format!("https://{}/feeds/{}", domain, feed.feed_id))
+        href: Some(format!("https://{}/profiles/{}", domain, profile.profile_id))
     };
 
     let mut links = Vec::new();

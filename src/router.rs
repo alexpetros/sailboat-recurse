@@ -3,7 +3,7 @@ mod healthcheck;
 mod well_known;
 mod index;
 mod posts;
-mod feeds;
+mod profiles;
 mod debug;
 mod search;
 mod follow;
@@ -70,9 +70,9 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Re
         (GET, [""]) => index::get(req).await,
         (GET, ["debug"]) => debug::get(req),
 
-        (GET, ["feeds", "new"]) => feeds::new::get(req),
-        (GET, ["feeds", ..]) => feeds::get(req).await,
-        (POST, ["feeds"]) => feeds::post(req).await,
+        (GET, ["profiles", "new"]) => profiles::new::get(req),
+        (GET, ["profiles", ..]) => profiles::get(req).await,
+        (POST, ["profiles"]) => profiles::post(req).await,
 
         (POST, ["search", ..]) => search::post(req).await,
 

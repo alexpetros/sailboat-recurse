@@ -22,6 +22,8 @@ pub async fn get(req: IncomingRequest<'_>) -> ResponseResult {
         Ok(actor)
     })?;
 
+    // let following: Vec<Actor> = rows.collect();
+
     let mut following = Vec::new();
     for actor in rows {
         following.push(actor?);

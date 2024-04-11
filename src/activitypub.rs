@@ -108,10 +108,10 @@ pub enum LinkType {
     Unknown(serde_json::Value),
 }
 
-pub fn build_activitypub_request(method: Method, domain: &str, feed_id: i64, uri: &Uri, pkey: PKey<pkey::Private>) -> Result<RequestBuilder, ServerError> {
+pub fn build_activitypub_request(method: Method, domain: &str, profile_id: i64, uri: &Uri, pkey: PKey<pkey::Private>) -> Result<RequestBuilder, ServerError> {
     let date = Utc::now().with_timezone(&GMT);
     let date_header = HeaderValue::from_bytes(date.format("%a, %d %b %Y %X %Z").to_string().as_bytes())?;
-    let key_id = format!("https://{}/feeds/{}#main-key", &domain, feed_id);
+    let key_id = format!("https://{}/profiles/{}#main-key", &domain, profile_id);
     let signature = get_signature_header(&method, &key_id, &uri, date, pkey)?;
 
     let client = reqwest::Client::new();

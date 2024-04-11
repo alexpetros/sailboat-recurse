@@ -28,7 +28,7 @@ struct Actor {
 }
 
 // TODO don't just Actor 1, obviously
-const FEED_ID: i64 = 1;
+const PROFILE_ID: i64 = 1;
 
 async fn get_or_search_for_actor(db: &mut Connection, domain: &str, handle: &str, host: &str) -> Result<Option<Actor>, ServerError> {
     // First check if we are following them
@@ -50,8 +50,8 @@ async fn get_or_search_for_actor(db: &mut Connection, domain: &str, handle: &str
     if actor.is_ok() { return Ok(actor.ok()); }
 
     let private_key_pem: String = db.query_row_and_then(
-        "SELECT private_key_pem FROM feeds WHERE feed_id = ?1",
-        [FEED_ID],
+        "SELECT private_key_pem FROM profiles WHERE profile_id = ?1",
+        [PROFILE_ID],
         |row| row.get(0))?;
 
     let web_finger = get_webfinger(host, handle).await?;
@@ -70,7 +70,7 @@ async fn get_or_search_for_actor(db: &mut Connection, domain: &str, handle: &str
         map_bad_gateway(e)
     })?;
 
-    let actor = get_remote_actor(domain, FEED_ID, &uri, &private_key_pem).await?;
+    let actor = get_remote_actor(domain, PROFILE_ID, &uri, &private_key_pem).await?;
 
     let icon_url = actor.icon.map(|i| i.url).unwrap_or("".to_owned());
     let actor = Actor {

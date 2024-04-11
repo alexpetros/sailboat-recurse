@@ -1,12 +1,12 @@
 CREATE TABLE posts (
   post_id INTEGER PRIMARY KEY,
-  feed_id INTEGER NOT NULL REFERENCES feeds ON DELETE CASCADE ON UPDATE CASCADE,
+  profile_id INTEGER NOT NULL REFERENCES profiles ON DELETE CASCADE ON UPDATE CASCADE,
   content TEXT,
   created_at INTEGER NOT NULL DEFAULT (unixepoch())
 ) STRICT;
 
-CREATE TABLE feeds (
-  feed_id INTEGER PRIMARY KEY,
+CREATE TABLE profiles (
+  profile_id INTEGER PRIMARY KEY,
   internal_name TEXT NOT NULL,
   display_name TEXT NOT NULL,
   handle TEXT NOT NULL,
@@ -30,9 +30,9 @@ CREATE TABLE globals (
 INSERT INTO globals (key, value) VALUES
 ('domain', 'sailboat.fly.dev');
 
-/* INSERT INTO feeds (internal_name, display_name, handle) */
+/* INSERT INTO profiles (internal_name, display_name, handle) */
 /* VALUES ('Thoughts', 'Alex Petros', 'thoughts'); */
 
-/* INSERT INTO posts (feed_id, content) */
+/* INSERT INTO posts (profile_id, content) */
 /* VALUES (1, 'This is my first sailboat post!') */
 /* ; */
