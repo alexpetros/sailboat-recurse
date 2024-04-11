@@ -4,11 +4,12 @@ use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 
-use crate::activitypub::actors::get_remote_actor;
-use crate::activitypub::{get_webfinger, LinkType};
+use crate::activitypub::requests::get_remote_actor;
+use crate::activitypub::requests::get_webfinger;
+use crate::activitypub::objects::actor::LinkType;
 use crate::server::error::{bad_request, map_bad_gateway, ServerError};
 use crate::server::server_response::send;
-use crate::server::{server_response::ServerResponse};
+use crate::server::server_response::ServerResponse;
 use crate::server::server_request::IncomingRequest;
 
 #[derive(Deserialize)]

@@ -12,11 +12,11 @@ use minijinja::context;
 use crate::queries::get_posts_in_profile;
 use crate::server::server_response::{self, redirect};
 use serde_json::json;
-use crate::activitypub::{self, Actor};
+use crate::activitypub::objects::actor::{Actor, ActorType, Context, PublicKey};
 
 use crate::server::error::{self, bad_request};
-use crate::server::server_request::{IncomingRequest};
-use crate::server::server_response::{ServerResponse, send};
+use crate::server::server_request::IncomingRequest;
+use crate::server::server_response::{send, ServerResponse};
 
 pub mod new;
 
@@ -131,17 +131,17 @@ fn serve_json_profile(req: IncomingRequest<'_>, profile: Profile) -> ServerRespo
     let id = format!("https://{}/profiles/{}", domain, profile.profile_id);
     let inbox = format!("https://{}/inbox", domain);
     let outbox = format!("https://{}/profiles/{}/outbox", domain, profile.profile_id);
-    let public_key = activitypub::PublicKey::new(&id, &profile.private_key_pem);
+    let public_key = PublicKey::new(&id, &profile.private_key_pem);
 
     let mut context = Vec::new();
-    context.push(activitypub::Context::ActivityStreams);
-    context.push(activitypub::Context::SecurityV1);
+    context.push(Context::ActivityStreams);
+    context.push(Context::SecurityV1);
     let actor = Actor {
         context,
         id: id.to_owned(),
         url: id.to_owned(),
         name: profile.handle.to_owned(),
-        actor_type: activitypub::ActorType::Person,
+        actor_type: ActorType::Person,
         summary: Some("We can't rewind, we've gone too far".to_owned()),
         preferred_username: profile.handle,
         icon: None,

@@ -1,19 +1,19 @@
 use tracing::debug;
 use tracing::warn;
-use crate::activitypub::LinkType;
 use crate::server::server_response;
 use hyper::StatusCode;
 use serde::Deserialize;
 use serde_json::json;
-use crate::activitypub::WebFinger;
-use crate::activitypub::WebFingerLink;
+use crate::activitypub::objects::actor::LinkType;
+use crate::activitypub::objects::webfinger::WebFinger;
+use crate::activitypub::objects::webfinger::WebFingerLink;
 use crate::server::error::bad_request;
 use crate::server::server_request::{IncomingRequest};
 use crate::server::server_response::send_status;
 use crate::server::server_response::ServerResponse;
 
 #[derive(Debug, Deserialize)]
-struct profile { profile_id: i64, }
+struct Profile { profile_id: i64, }
 
 #[derive(Debug, Deserialize)]
 struct Query {
@@ -32,7 +32,7 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
         .ok_or_else(|| { bad_request("Invalid resource query provided (missing scheme i.e. 'acct:')") })?;
 
     if search_type != "acct" {
-        warn!("Receieved search type: {}", search_type);
+        warn!("Received search type: {}", search_type);
         return Err(bad_request("Sorry, that scheme is not supported yet (expected 'acct:')"));
     }
 
@@ -51,7 +51,7 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
         FROM profiles
         WHERE handle = ?1
     ", [ handle ], |row| {
-        let profile = profile { profile_id: row.get(0)? };
+        let profile = Profile { profile_id: row.get(0)? };
         Ok(profile)
     });
 
