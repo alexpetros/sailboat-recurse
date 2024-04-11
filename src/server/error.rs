@@ -49,16 +49,6 @@ impl From<hyper::Error> for ServerError {
     }
 }
 
-impl From<serde_html_form::de::Error> for ServerError {
-    fn from(err: serde_html_form::de::Error) -> Self {
-        ServerError {
-            prefix: "[BAD REQUEST]",
-            message: err.to_string(),
-            status_code: StatusCode::BAD_REQUEST
-        }
-    }
-}
-
 impl From<ErrorStack> for ServerError {
     fn from(err: ErrorStack) -> Self {
         ServerError {
