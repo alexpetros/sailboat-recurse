@@ -21,12 +21,10 @@ body {
 .nav-links > li {
   align-self: center;
   display: inline-block;
-  padding: 1rem 0;
 }
 
 .nav-links > li:not(:last-child) {
-  padding-left: 25px;
-  padding-right: 25px;
+  padding: 1rem 25px;
 }
 
 .nav-links > li:hover:not(:last-child) a {
@@ -47,6 +45,7 @@ body {
 
 .profile-dropdown {
   display: block;
+  height: 100%;
 }
 
 .profile-dropdown summary {
@@ -58,7 +57,7 @@ body {
   list-style: none;
   position: absolute;
   padding: 0;
-  margin-top: 1rem;
+  margin-top: .9rem;
   margin-right: .5rem;
   width: 150px;
 }

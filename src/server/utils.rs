@@ -8,3 +8,7 @@ pub fn deserialize_json<'a, T>(text: &'a str) -> Result<T, ServerError> where T:
         map_bad_gateway(e)
     })
 }
+
+pub fn make_cookie(key: &str, value: &str) -> String {
+    format!("{}={}; SameSite=Lax; Secure; HttpOnly; Path=/", key, value)
+}
