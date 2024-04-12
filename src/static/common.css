@@ -1,39 +1,74 @@
 body {
-  display: flex;
-  flex-direction: row;
-  margin: 0;
+  margin: 0 auto;
   max-width: 800px;
   min-height: 100vh;
 }
 
 .site-nav {
-  width: 100px;
-  background-color: black;
+  width: 100%;
+  background-color: bisque;
   margin: 0 30px 0 0;
-  padding: 20px 0 0 0;
 }
 
-.site-nav ul {
+.nav-links {
+  display: flex;
+  flex-direction: row;
   list-style: none;
   margin: 0;
   padding: 0;
-  text-align: center;
 }
 
-.site-nav li {
-  margin: 0;
+.nav-links > li {
+  align-self: center;
+  display: inline-block;
+  padding: 1rem 0;
 }
 
-.site-nav li:hover {
-  background-color: gray;
+.nav-links > li:not(:last-child) {
+  padding-left: 25px;
+  padding-right: 25px;
 }
 
-.site-nav a {
-  color: white;
-  display: block;
-  padding: 10px 0;
+.nav-links > li:last-child {
+  margin-left: auto;
+  width: 150px;
+}
+
+.nav-links a {
+  color: black;
+  width: 100%;
+  display: inline-block;
   text-decoration: none;
 }
+
+.profile-dropdown {
+  display: block;
+}
+
+.profile-dropdown summary {
+  user-select: none;
+}
+
+.profile-dropdown ul {
+  background-color: bisque;
+  list-style: none;
+  position: absolute;
+  padding: 0;
+  margin-top: 1rem;
+  margin-right: .5rem;
+  width: 150px;
+}
+
+.profile-dropdown li {
+  padding: .5rem .3rem;
+}
+
+.nav-links li:hover:not(:last-child),
+.profile-dropdown li:hover
+{
+  background-color: white;
+}
+
 
 address {
   font-style: normal;

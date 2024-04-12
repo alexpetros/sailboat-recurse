@@ -11,16 +11,24 @@
   <!-- {% if env == 'debug' %} -->
   <!--   <div class="dev-banner">DEVELOPMENT</div> -->
   <!-- {% endif %} -->
-  <ul>
+  <ul class=nav-links>
     <li><a href="/">Home</a></li>
-    {% for profile in profiles %}
-      <li><a href="/profiles/{{ profile.profile_id }}">{{ profile.internal_name }}</a></li>
-    {% endfor %}
-    <li><a href="/profiles/new">+</a></li>
-    <!-- <li><a href="/profile">Profile</a></li> -->
+
+    <li>
+      <details class=profile-dropdown>
+        <summary>Profiles</summary>
+        <ul>
+          {% for profile in profiles %}
+          <li><a href="/profiles/{{ profile.profile_id }}">{{ profile.internal_name }}</a></li>
+          {% endfor %}
+          <li><a href="/profiles/new">(Create New)</a></li>
+        </ul>
+      </details>
+    </li>
   </ul>
 </nav>
 <main>
+
 <!-- <dialog id=error-dialog class=error></dialog> -->
 {% block main %}{% endblock %}
 </main>
