@@ -8,6 +8,7 @@ mod debug;
 mod search;
 mod follow;
 mod following;
+mod switch;
 
 use hyper::header::HOST;
 use crate::server::error::ServerError;
@@ -20,6 +21,7 @@ use hyper::body::Incoming;
 use tracing::debug;
 use tracing::warn;
 use tracing::error;
+use profiles::_profile_id;
 
 use crate::server::server_request::ServerRequest;
 use crate::server::context::GlobalContext;
@@ -51,7 +53,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
     };
 
     let req = ServerRequest::new(req, &g_ctx, db, domain)?;
-    
+
     // Serve static files separately
     if req.uri().path().starts_with("/static") {
         return serve_static::get(req).await;
@@ -70,10 +72,12 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
         (GET, [""]) => index::get(req).await,
         (GET, ["debug"]) => debug::get(req),
 
-        (GET, ["profiles", "new"]) => profiles::new::get(req),
-        (GET, ["profiles", ..]) => profiles::get(req).await,
         (POST, ["profiles"]) => profiles::post(req).await,
+        (GET, ["profiles", "new"]) => profiles::new::get(req),
+        (GET, ["profiles", _]) => _profile_id::get(req).await,
 
+        (GET, ["switch", _]) => switch::get(req),
+        
         (POST, ["search", ..]) => search::post(req).await,
 
         (POST, ["posts"]) => posts::post(req).await,

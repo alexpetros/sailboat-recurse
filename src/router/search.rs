@@ -31,6 +31,26 @@ struct Actor {
 // TODO don't just use Actor 1, obviously
 const PROFILE_ID: i64 = 1;
 
+pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
+    let mut req = req.to_text().await?;
+    let query: Query = req.get_form_data()?;
+    let username = query.q;
+    let mut splits = username.splitn(3, '@').peekable();
+
+    splits.next_if_eq(&"");
+    let handle = splits.next().ok_or(bad_request("Missing user name"))?.trim();
+    let host = splits.next().ok_or(bad_request("Missing host name"))?.trim();
+    let actor = get_or_search_for_actor(&mut req.db, &req.domain, &handle, &host).await?;
+    let actor = match actor {
+        None => return Ok(send("No account found")),
+        Some(actor) => actor
+    };
+
+    let context = context!{ user => actor };
+
+    Ok(send(req.render("user-search-result.html", context)))
+}
+
 async fn get_or_search_for_actor(db: &mut Connection, domain: &str, handle: &str, host: &str) -> Result<Option<Actor>, ServerError> {
     // First check if we are following them
     let actor = db.query_row(
@@ -85,24 +105,4 @@ async fn get_or_search_for_actor(db: &mut Connection, domain: &str, handle: &str
     };
 
     Ok(Some(actor))
-}
-
-pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
-    let mut req = req.to_text().await?;
-    let query: Query = req.get_form_data()?;
-    let username = query.q;
-    let mut splits = username.splitn(3, '@').peekable();
-
-    splits.next_if_eq(&"");
-    let handle = splits.next().ok_or(bad_request("Missing user name"))?.trim();
-    let host = splits.next().ok_or(bad_request("Missing host name"))?.trim();
-    let actor = get_or_search_for_actor(&mut req.db, &req.domain, &handle, &host).await?;
-    let actor = match actor {
-        None => return Ok(send("No account found")),
-        Some(actor) => actor
-    };
-
-    let context = context!{ user => actor };
-
-    Ok(send(req.render("user-search-result.html", context)))
 }

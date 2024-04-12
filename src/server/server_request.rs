@@ -1,12 +1,15 @@
+use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::Arc;
 use hyper::body::{Bytes, Incoming};
 use http_body_util::BodyExt;
+use hyper::header::COOKIE;
 use minijinja::{context, Value};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use tracing::log::warn;
 use crate::server::context::GlobalContext;
+use crate::server::error;
 use crate::server::error::{map_bad_request, ServerError};
 
 use super::error::{body_not_utf8, body_too_large};
@@ -31,6 +34,7 @@ pub struct ServerRequest<'a, T> {
     pub global: Arc<GlobalContext<'a>>,
     pub domain: String,
     pub db: Connection,
+    pub cookies: HashMap<String, String>,
     locals: Locals,
 }
 
@@ -39,6 +43,12 @@ impl<'a, T> ServerRequest<'a, T> {
         let global_values = context! { env => ENV };
         let request_values = context! { profiles => self.locals.profiles };
         context! { ..local_values, ..request_values, ..global_values }
+    }
+
+    pub fn get_trailing_param(&self, message: &str) -> Result<&str, ServerError>{
+        self.uri().path().split("/")
+            .last()
+            .ok_or(error::bad_request(message))
     }
 
     pub fn render(&self, path: &str, local_values: Value) -> Vec<u8> {
@@ -82,8 +92,20 @@ impl<'a, T> ServerRequest<'a, T> {
             profiles
         };
 
+        let cookie_string = request.headers().get(COOKIE)
+            .map(|value| { value.to_str().ok() })
+            .flatten();
+        
+        let cookies = cookie_string
+            .map(|s| { s.split("; ").collect::<Vec<&str>>()})
+            .unwrap_or(Vec::<&str>::new())
+            .iter()
+            .filter_map(|s| { s.split_once("=") })
+            .map(|(key, value)| { (key.to_owned(), value.to_owned())})
+            .collect::<HashMap<String, String>>();
         let locals = Locals { profiles };
-        Ok(Self { request, global: g_ctx.clone(), db, domain, locals })
+        
+        Ok(Self { request, global: g_ctx.clone(), db, domain, locals, cookies })
     }
 }
 
@@ -101,8 +123,9 @@ impl<'a> ServerRequest<'a, Incoming> {
         let global = self.global;
         let db = self.db;
         let locals = self.locals;
+        let cookies = self.cookies;
 
-        Ok(ServerRequest { request, global, db, domain, locals })
+        Ok(ServerRequest { request, global, db, domain, cookies, locals })
     }
 
     pub async fn to_text(self) -> Result<ServerRequest<'a, String>, ServerError> {
@@ -117,12 +140,13 @@ impl<'a> ServerRequest<'a, Bytes> {
         let (parts, body) = self.request.into_parts();
         let str = String::from_utf8(body.to_vec()).map_err(|_| { body_not_utf8() })?;
         let request = hyper::Request::from_parts(parts, str);
+        
         let domain = self.domain;
         let global = self.global;
         let db = self.db;
         let locals = self.locals;
-
-        Ok(ServerRequest { request, global, db, domain, locals })
+        let cookies = self.cookies;
+        Ok(ServerRequest { request, global, db, domain, cookies, locals })
     }
 }
 

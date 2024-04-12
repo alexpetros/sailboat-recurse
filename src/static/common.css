@@ -29,6 +29,10 @@ body {
   padding-right: 25px;
 }
 
+.nav-links > li:hover:not(:last-child) a {
+  text-decoration: underline;
+}
+
 .nav-links > li:last-child {
   margin-left: auto;
   width: 150px;
@@ -63,7 +67,6 @@ body {
   padding: .5rem .3rem;
 }
 
-.nav-links li:hover:not(:last-child),
 .profile-dropdown li:hover
 {
   background-color: white;
