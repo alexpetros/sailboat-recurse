@@ -38,7 +38,6 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
         Err(_) => return send_status(StatusCode::NOT_FOUND)
     };
 
-
     let context = context! {
         posts,
         profile,

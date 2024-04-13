@@ -6,7 +6,7 @@
 
 {% block main %}
 <style>
-textarea[name=content] {
+.create textarea[name=content] {
   width: 100%;
   max-width: 400px;
   resize: vertical;
@@ -15,19 +15,13 @@ textarea[name=content] {
 section {
   margin: 10px 0;
 }
-
-.post {
-  padding: 5px 5px;
-}
-
-button.delete {
-  display: block;
-}
-
 </style>
 
+<section>
 <h1>{{ profile.display_name }}</h1>
 <div>@{{ profile.handle }}</div>
+  Following: <a href="/following">{{ follow_count }}</a>
+</section>
 
 <section class=newpost>
 <h2>Create</h2>
@@ -43,15 +37,29 @@ button.delete {
 </form>
 </section>
 
-
-<section>
-  Following: <a href="/following">{{ follow_count }}</a>
-</section>
-
-
-<section>
-  <h2>Results</h2>
-  <p id=results></p>
-</section>
+{% block profile %}
+<section class=profile>
+<h2>Feed</h2>
+{% for post in posts %}
+<article class=post>
+  <div class=userinfo>
+    <address>
+      <span class=user>{{ post.display_name }}</span> -
+      <span class=handle>{{ post.handle }}</span>
+    </address>
+    <button class=delete
+            hx-delete="/posts/{{ post.post_id }}"
+            hx-target="closest article"
+            hx-swap="outerHTML"
+            hx-confirm="Are you sure you want to delete this post?"
+    >Delete
+    </button>
+    </div>
+    <p>{{ post.content }}</p>
+    <footer>{{ post.created_at }}</footer>
+  </article>
+  {% endfor %}
+  </section>
+{% endblock %}
 
 {% endblock %}

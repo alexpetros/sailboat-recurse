@@ -125,3 +125,20 @@ article.post {
   margin-left: auto;
   align-self: center;
 }
+
+.post {
+  padding: 5px 5px;
+}
+
+.post button.delete {
+  display: block;
+}
+
+.post .userinfo {
+  display: flex;
+  justify-content: space-between;
+}
+
+.post footer {
+  color: gray;
+}
