@@ -21,11 +21,14 @@ struct Profile {
 }
 
 #[derive(Serialize)]
-struct Locals {
+pub struct Locals {
     profiles: Vec<Profile>,
+    pub current_profile: i64
 }
 
 const ENV: &str = if cfg!(debug_assertions) { "debug" } else { "prod" };
+// TODO this wouldnt' work if you deleted for your first profile
+const DEFAULT_PROFILE: i64 = 1;
 
 pub type IncomingRequest<'a> = ServerRequest<'a, Incoming>;
 
@@ -35,7 +38,7 @@ pub struct ServerRequest<'a, T> {
     pub domain: String,
     pub db: Connection,
     pub cookies: HashMap<String, String>,
-    locals: Locals,
+    pub locals: Locals,
 }
 
 impl<'a, T> ServerRequest<'a, T> {
@@ -76,6 +79,7 @@ impl<'a, T> ServerRequest<'a, T> {
     pub fn new(request: hyper::Request<T>, g_ctx: &Arc<GlobalContext<'a>>, db: Connection, domain: String) -> Result<Self, ServerError> {
         let profiles = {
             let mut query = db.prepare("SELECT profile_id, internal_name FROM profiles")?;
+
             let rows = query.query_map((), |row| {
                 let profiles = Profile {
                     profile_id: row.get(0)?,
@@ -95,7 +99,7 @@ impl<'a, T> ServerRequest<'a, T> {
         let cookie_string = request.headers().get(COOKIE)
             .map(|value| { value.to_str().ok() })
             .flatten();
-        
+
         let cookies = cookie_string
             .map(|s| { s.split("; ").collect::<Vec<&str>>()})
             .unwrap_or(Vec::<&str>::new())
@@ -103,8 +107,17 @@ impl<'a, T> ServerRequest<'a, T> {
             .filter_map(|s| { s.split_once("=") })
             .map(|(key, value)| { (key.to_owned(), value.to_owned())})
             .collect::<HashMap<String, String>>();
-        let locals = Locals { profiles };
-        
+
+        let current_profile = cookies.get("current_profile")
+            .map(|id| { id.parse::<i64>().ok() })
+            .flatten()
+            .unwrap_or(DEFAULT_PROFILE);
+
+        let locals = Locals {
+            profiles,
+            current_profile
+        };
+
         Ok(Self { request, global: g_ctx.clone(), db, domain, locals, cookies })
     }
 }
@@ -140,7 +153,7 @@ impl<'a> ServerRequest<'a, Bytes> {
         let (parts, body) = self.request.into_parts();
         let str = String::from_utf8(body.to_vec()).map_err(|_| { body_not_utf8() })?;
         let request = hyper::Request::from_parts(parts, str);
-        
+
         let domain = self.domain;
         let global = self.global;
         let db = self.db;

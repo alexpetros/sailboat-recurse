@@ -8,6 +8,7 @@ use crate::activitypub::requests::get_remote_actor;
 use crate::activitypub::requests::get_webfinger;
 use crate::activitypub::objects::actor::LinkType;
 use crate::server::error::{bad_request, map_bad_gateway, ServerError};
+use crate::server::server_response;
 use crate::server::server_response::send;
 use crate::server::server_response::ServerResponse;
 use crate::server::server_request::IncomingRequest;
@@ -30,6 +31,11 @@ struct Actor {
 
 // TODO don't just use Actor 1, obviously
 const PROFILE_ID: i64 = 1;
+
+pub fn get(req: IncomingRequest<'_>) -> ServerResponse {
+    let body = req.render("search.html", context! {});
+    Ok(server_response::send(body))
+}
 
 pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
     let mut req = req.to_text().await?;

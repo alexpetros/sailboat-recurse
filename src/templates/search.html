@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Sailboat</title>
+{% endblock %}
+
+{% block main %}
+<style>
+textarea[name=content] {
+  width: 100%;
+  max-width: 400px;
+  resize: vertical;
+}
+
+.userinfo {
+  display: flex;
+  justify-content: space-between;
+}
+</style>
+
+<h1>Search the Internet</h1>
+
+<p>Find a ActivityPub user:</p>
+<form method=POST action=/search hx-post=/search hx-swap=innerHTML hx-target=#results>
+  <input type=search name=q>
+  <button>Search</button>
+</form>
+
+<section>
+  <h2>Results</h2>
+  <p id=results></p>
+</section>
+
+{% endblock %}
+

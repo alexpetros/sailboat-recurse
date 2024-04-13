@@ -78,6 +78,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
 
         (GET, ["switch", _]) => switch::get(req),
 
+        (GET, ["search", ..]) => search::get(req),
         (POST, ["search", ..]) => search::post(req).await,
 
         (POST, ["posts"]) => posts::post(req).await,

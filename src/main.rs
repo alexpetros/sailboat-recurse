@@ -61,6 +61,7 @@ async fn main() {
         if g_ctx.domain.is_none() {
             println!("Dev mode running but no global callback domain is specified. Remote servers will not be able to call back.");
         }
+        println!("Running with callback domain: {}", g_ctx.domain.clone().unwrap());
     }
 
     let g_ctx = Arc::new(g_ctx);

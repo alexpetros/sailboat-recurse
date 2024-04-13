@@ -35,7 +35,6 @@ pub async fn get_remote_actor(domain: &str, profile_id: i64, uri: &Uri, private_
     // Sig test stuff
     let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes())?;
 
-    println!("Requesting {}", uri.to_string());
     let request = build_activitypub_request(Method::GET, domain, profile_id, uri, pkey)?;
     let res = request.send().await.map_err(map_bad_gateway)?;
 

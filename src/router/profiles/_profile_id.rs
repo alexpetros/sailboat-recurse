@@ -7,7 +7,7 @@ use crate::activitypub::objects::actor::{Actor, ActorType, Context, PublicKey};
 use crate::queries::get_posts_in_profile;
 use crate::router::profiles::{LONG_ACCEPT_HEADER, Profile, SHORT_ACCEPT_HEADER};
 use crate::server::server_request::IncomingRequest;
-use crate::server::{server_response};
+use crate::server::server_response;
 use crate::server::error::bad_request;
 use crate::server::server_response::{send, send_status, ServerResponse};
 
@@ -19,20 +19,19 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
         Some((f, _)) => f
     }.parse::<i64>().map_err(|_| { bad_request("Invalid profile ID") })?;
 
-    let profile = req.db
-        .query_row("
+    let profile = req.db.query_row("
         SELECT profile_id, handle, display_name, internal_name, private_key_pem
         FROM profiles where profile_id = ?1"
-                   , [ profile_id ], |row| {
-                let profile = Profile {
-                    profile_id: row.get(0)?,
-                    handle: row.get(1)?,
-                    display_name: row.get(2)?,
-                    internal_name: row.get(3)?,
-                    private_key_pem: row.get(4)?
-                };
-                Ok(profile)
-            });
+        , [ profile_id ], |row| {
+            let profile = Profile {
+                profile_id: row.get(0)?,
+                handle: row.get(1)?,
+                display_name: row.get(2)?,
+                internal_name: row.get(3)?,
+                private_key_pem: row.get(4)?
+            };
+            Ok(profile)
+        });
 
     let profile = match profile {
         Ok(x) => x,
@@ -77,6 +76,7 @@ fn serve_json_profile(req: IncomingRequest<'_>, profile: Profile) -> ServerRespo
     let domain = &req.domain;
 
     let id = format!("https://{}/profiles/{}", domain, profile.profile_id);
+    println!("{}", &id);
     let inbox = format!("https://{}/inbox", domain);
     let outbox = format!("https://{}/profiles/{}/outbox", domain, profile.profile_id);
     let public_key = PublicKey::new(&id, &profile.private_key_pem);
