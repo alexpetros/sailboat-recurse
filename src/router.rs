@@ -22,6 +22,7 @@ use hyper::body::Incoming;
 use tracing::debug;
 use tracing::warn;
 use tracing::error;
+use feeds::_feed_handle;
 use profiles::_profile_id;
 
 use crate::server::server_request::ServerRequest;
@@ -72,7 +73,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
     match (req.method(), &sub_routes[1..]) {
         (GET, [""]) => index::get(req).await,
 
-        (GET, ["feeds", _]) => feeds::get(req).await,
+        (GET, ["feeds", _]) => _feed_handle::get(req).await,
 
         (POST, ["follow"]) => follow::post(req).await,
         (GET, ["following"]) => following::get(req).await,

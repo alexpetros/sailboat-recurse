@@ -98,3 +98,11 @@ pub fn body_not_utf8() -> ServerError {
         status_code: StatusCode::BAD_REQUEST
     }
 }
+
+pub fn bad_gateway(message: &str) -> ServerError {
+    ServerError {
+        prefix: "[BAD REQUEST]",
+        message: message.to_owned(),
+        status_code: StatusCode::BAD_REQUEST
+    }
+}

@@ -1,0 +1,26 @@
+<article class=profile-search-result>
+  <header>
+    <img width=46 height=46 src="{{ actor.icon_url }}">
+    <div>
+      <h2>{{ actor.name }}</h2>
+      <address><a href="{{ actor.local_url }}">@{{ actor.preferredUsername }}</a></address>
+    </div>
+
+    <form action=/follow method=POST hx-post=/follow hx-swap=outerHTML>
+      <input name=url type=hidden value="{{ actor.url }}">
+      <input name=preferredUsername type=hidden value="{{ actor.preferredUsername }}">
+      <input name=name type=hidden value="{{ actor.name }}">
+      <input name=summary type=hidden value="{{ actor.summary }}">
+      <input name=host type=hidden value="{{ actor.host }}">
+      {% if actor.is_followed %}
+      <button disabled>Followed</button>
+      {% else %}
+      <button>Follow</button>
+      {% endif %}
+    </form>
+
+  </header>
+
+  <p>{{ actor.summary }}</p>
+
+</article>

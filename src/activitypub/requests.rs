@@ -32,7 +32,6 @@ fn build_activitypub_request(method: Method, domain: &str, profile_id: i64, uri:
 
 // TODO this could probably be a "Valid activitypub URI type"
 pub async fn get_remote_actor(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<Actor, ServerError> {
-    // Sig test stuff
     let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes())?;
 
     let request = build_activitypub_request(Method::GET, domain, profile_id, uri, pkey)?;
@@ -42,6 +41,18 @@ pub async fn get_remote_actor(domain: &str, profile_id: i64, uri: &Uri, private_
     let actor: Actor = utils::deserialize_json(&body)?;
 
     Ok(actor)
+}
+
+pub async fn get_outbox(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<String, ServerError> {
+    let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes())?;
+
+    let request = build_activitypub_request(Method::GET, domain, profile_id, uri, pkey)?;
+    let res = request.send().await.map_err(map_bad_gateway)?;
+
+    let body = res.text().await.map_err(map_bad_gateway)?;
+    // let actor: Outbox = utils::deserialize_json(&body)?;
+
+    Ok(body)
 }
 
 pub async fn get_webfinger(host: &str, account_name: &str) -> Result<WebFinger, ServerError> {
