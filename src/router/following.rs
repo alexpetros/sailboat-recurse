@@ -30,6 +30,6 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
     }
 
     let context = context! { following };
-    let body = req.render("following.html", context);
+    let body = req.render("following.html", context)?;
     Ok(send(body))
 }

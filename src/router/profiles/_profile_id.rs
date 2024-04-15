@@ -63,7 +63,7 @@ async fn serve_html_profile(req: IncomingRequest<'_>, profile: Profile) -> Serve
     let posts = get_posts_in_profile(&req.db, profile.profile_id)?;
     let context = context! { profile => profile, posts => posts };
 
-    let body = req.render("profile.html", context);
+    let body = req.render("profile.html", context)?;
     Ok(server_response::send(body))
 }
 

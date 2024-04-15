@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use tracing::log::warn;
 use crate::server::context::GlobalContext;
 use crate::server::error;
-use crate::server::error::{map_bad_request, ServerError};
+use crate::server::error::{map_bad_gateway, map_bad_request, ServerError};
 
 use super::error::{body_not_utf8, body_too_large};
 
@@ -54,10 +54,12 @@ impl<'a, T> ServerRequest<'a, T> {
             .ok_or(error::bad_request(message))
     }
 
-    pub fn render(&self, path: &str, local_values: Value) -> Vec<u8> {
+    pub fn render(&self, path: &str, local_values: Value) -> Result<Vec<u8>, ServerError> {
         let tmpl = self.global.env.get_template(path).unwrap();
         let context = self.make_context(local_values);
-        tmpl.render(context).unwrap().into_bytes()
+        tmpl.render(context)
+            .map(|x| x.into_bytes())
+            .map_err(|e| map_bad_gateway(e))
     }
 
     // pub fn render_block(&self, path: &str, block_name: &str, local_values: Value) -> Vec<u8> {

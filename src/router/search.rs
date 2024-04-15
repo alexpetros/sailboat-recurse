@@ -13,7 +13,7 @@ struct Query {
 }
 
 pub fn get(req: IncomingRequest<'_>) -> ServerResponse {
-    let body = req.render("search.html", context! {});
+    let body = req.render("search.html", context! {})?;
     Ok(send(body))
 }
 
@@ -29,6 +29,6 @@ pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
     };
 
     let context = context!{ user => actor };
-
-    Ok(send(req.render("user-search-result.html", context)))
+    let body = req.render("user-search-result.html", context)?;
+    Ok(send(body))
 }

@@ -47,7 +47,7 @@ pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
           Ok(post)
         })?;
 
-    let body = req.render("_partials/post.html", context! { post });
+    let body = req.render("_partials/post.html", context! { post })?;
 
     Ok(send(body))
 }

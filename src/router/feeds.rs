@@ -15,6 +15,6 @@ pub async fn get(mut req: IncomingRequest<'_>) -> ServerResponse {
     };
 
     let context = context!{ actor };
-
-    Ok(send(req.render("feeds/_feed_handle.html", context)))
+    let body = req.render("feeds/_feed_handle.html", context)?;
+    Ok(send(body))
 }

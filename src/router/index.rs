@@ -44,6 +44,6 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
         follow_count,
     };
 
-    let body = req.render("index.html", context);
+    let body = req.render("index.html", context)?;
     Ok(server_response::send(body))
 }
