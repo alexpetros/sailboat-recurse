@@ -58,3 +58,4 @@ pub async fn get_webfinger(host: &str, account_name: &str) -> Result<WebFinger, 
     let web_finger: WebFinger = utils::deserialize_json(&text)?;
     Ok(web_finger)
 }
+

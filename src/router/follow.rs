@@ -7,7 +7,7 @@ use crate::server::server_response::{ServerResponse, send};
 struct Actor {
     url: String,
     name: String,
-    handle: String,
+    preferred_username: String,
     summary: String,
     host: String,
 }
@@ -17,9 +17,9 @@ pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
     let form: Actor = req.get_form_data()?;
 
     req.db.execute(
-        "INSERT INTO followed_actors (url, name, handle, summary, host)
+        "INSERT INTO followed_actors (url, name, preferred_username, summary, host)
         VALUES (?1, ?2, ?3, ?4, ?5)",
-        (&form.url, &form.name, &form.handle, &form.summary, &form.host)
+        (&form.url, &form.name, &form.preferred_username, &form.summary, &form.host)
     )?;
 
     let res = "<button disabled>Followed!</button>".to_string();

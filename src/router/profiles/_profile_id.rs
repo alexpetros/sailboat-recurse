@@ -63,11 +63,6 @@ async fn serve_html_profile(req: IncomingRequest<'_>, profile: Profile) -> Serve
     let posts = get_posts_in_profile(&req.db, profile.profile_id)?;
     let context = context! { profile => profile, posts => posts };
 
-    // let req_body = get_remote_actor(&domain, profile.profile_id, &profile.private_key_pem)
-    //     .await
-    //     .unwrap_or_else(|e| {  e.message });
-    // let context = context! { req_body => req_body, ..context };
-
     let body = req.render("profile.html", context);
     Ok(server_response::send(body))
 }
@@ -76,7 +71,6 @@ fn serve_json_profile(req: IncomingRequest<'_>, profile: Profile) -> ServerRespo
     let domain = &req.domain;
 
     let id = format!("https://{}/profiles/{}", domain, profile.profile_id);
-    println!("{}", &id);
     let inbox = format!("https://{}/inbox", domain);
     let outbox = format!("https://{}/profiles/{}/outbox", domain, profile.profile_id);
     let public_key = PublicKey::new(&id, &profile.private_key_pem);
@@ -93,8 +87,8 @@ fn serve_json_profile(req: IncomingRequest<'_>, profile: Profile) -> ServerRespo
         summary: Some("We can't rewind, we've gone too far".to_owned()),
         preferred_username: profile.handle,
         icon: None,
-        inbox,
-        outbox,
+        inbox: Some(inbox),
+        outbox: Some(outbox),
         public_key
     };
 

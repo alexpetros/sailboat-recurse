@@ -27,7 +27,7 @@ pub struct Locals {
 }
 
 const ENV: &str = if cfg!(debug_assertions) { "debug" } else { "prod" };
-// TODO this wouldnt' work if you deleted for your first profile
+// TODO this wouldn't work if you deleted for your first profile
 const DEFAULT_PROFILE: i64 = 1;
 
 pub type IncomingRequest<'a> = ServerRequest<'a, Incoming>;
@@ -79,7 +79,6 @@ impl<'a, T> ServerRequest<'a, T> {
     pub fn new(request: hyper::Request<T>, g_ctx: &Arc<GlobalContext<'a>>, db: Connection, domain: String) -> Result<Self, ServerError> {
         let profiles = {
             let mut query = db.prepare("SELECT profile_id, internal_name FROM profiles")?;
-
             let rows = query.query_map((), |row| {
                 let profiles = Profile {
                     profile_id: row.get(0)?,
@@ -117,6 +116,7 @@ impl<'a, T> ServerRequest<'a, T> {
             profiles,
             current_profile
         };
+
 
         Ok(Self { request, global: g_ctx.clone(), db, domain, locals, cookies })
     }

@@ -16,9 +16,11 @@ CREATE TABLE profiles (
 CREATE TABLE followed_actors (
   followed_actor_id INTEGER PRIMARY key,
   name TEXT NOT NULL,
-  handle TEXT NOT NULL,
+  preferred_username TEXT NOT NULL,
   host TEXT NOT NULL,
   url TEXT NOT NULL UNIQUE,
+  inbox TEXT,
+  outbox TEXT,
   summary TEXT
 ) STRICT;
 

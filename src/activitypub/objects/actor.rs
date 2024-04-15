@@ -57,8 +57,8 @@ pub struct Actor {
     pub actor_type: ActorType,
     #[serde(rename = "preferredUsername")]
     pub preferred_username: String, // This might be optional
-    pub inbox: String,
-    pub outbox: String,
+    pub inbox: Option<String>,
+    pub outbox: Option<String>,
     #[serde(rename = "publicKey")]
     pub public_key: PublicKey,
     pub icon: Option<Icon>

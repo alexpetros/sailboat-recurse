@@ -10,13 +10,6 @@ h1, h2 {
   margin: 0;
 }
 
-section {
-  margin: 10px 0;
-  border: 1px solid rgb(212, 212, 212);
-  border-radius: .4rem;
-  padding: 16px;
-}
-
 .newpost {
   background-color: rgb(244, 244, 244);
 }
@@ -46,13 +39,13 @@ section {
 
 </style>
 
-<section>
+<section class=card>
 <h1>{{ profile.display_name }}</h1>
 <div>@{{ profile.handle }}</div>
   Following: <a href="/following">{{ follow_count }}</a>
 </section>
 
-<section class=newpost>
+<section class="card newpost">
 <form action="/posts"
       method=post
       hx-post="/posts"
@@ -65,7 +58,7 @@ section {
 </form>
 </section>
 
-<section class=feed>
+<section class="card feed">
 <h2>Feed</h2>
 {% for post in posts %}
   {%- include '_partials/post.html' %}

@@ -9,6 +9,7 @@ mod search;
 mod follow;
 mod following;
 mod switch;
+mod feeds;
 
 use hyper::header::HOST;
 use crate::server::error::ServerError;
@@ -70,7 +71,11 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
 
     match (req.method(), &sub_routes[1..]) {
         (GET, [""]) => index::get(req).await,
-        (GET, ["debug"]) => debug::get(req),
+
+        (GET, ["feeds", _]) => feeds::get(req).await,
+
+        (POST, ["follow"]) => follow::post(req).await,
+        (GET, ["following"]) => following::get(req).await,
 
         (POST, ["profiles"]) => profiles::post(req).await,
         (GET, ["profiles", "new"]) => profiles::new::get(req),
@@ -84,11 +89,9 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
         (POST, ["posts"]) => posts::post(req).await,
         (DELETE, ["posts", ..]) => posts::delete(req),
 
-        (POST, ["follow"]) => follow::post(req).await,
-        (GET, ["following"]) => following::get(req).await,
-
         (GET, [".well-known", "webfinger"]) => webfinger::get(req).await,
 
+        (GET, ["debug"]) => debug::get(req),
         (GET, ["healthcheck"]) => healthcheck::get(req),
         _ => server_response::not_found(req)
     }

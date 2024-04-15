@@ -1,11 +1,9 @@
-use hyper::StatusCode;
 use minijinja::context;
 use serde::Serialize;
 
 use crate::queries::get_posts_in_profile;
 use crate::server::server_request::IncomingRequest;
-use crate::server::server_response::{self, send_status};
-use crate::server::server_response::ServerResponse;
+use crate::server::server_response::{self, redirect, ServerResponse};
 
 #[derive(Serialize)]
 struct Profile {
@@ -19,6 +17,7 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
     let posts = get_posts_in_profile(&req.db, req.locals.current_profile)?;
     let mut query = req.db.prepare("SELECT count(*) FROM followed_actors")?;
     let follow_count: i64 = query.query_row((), |row| { row.get(0) })?;
+
 
     let profile = req.db.query_row("
         SELECT profile_id, handle, display_name, internal_name
@@ -35,7 +34,7 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
 
     let profile = match profile {
         Ok(x) => x,
-        Err(_) => return send_status(StatusCode::NOT_FOUND)
+        Err(_) => return redirect("/profiles/new")
     };
 
     let context = context! {
