@@ -60,12 +60,12 @@ impl<'a, T> ServerRequest<'a, T> {
         tmpl.render(context).unwrap().into_bytes()
     }
 
-    pub fn render_block(&self, path: &str, block_name: &str, local_values: Value) -> Vec<u8> {
-        let tmpl = self.global.env.get_template(path).unwrap();
-        let context = self.make_context(local_values);
-        let rv = tmpl.eval_to_state(context).unwrap().render_block(block_name).unwrap().into_bytes();
-        rv
-    }
+    // pub fn render_block(&self, path: &str, block_name: &str, local_values: Value) -> Vec<u8> {
+    //     let tmpl = self.global.env.get_template(path).unwrap();
+    //     let context = self.make_context(local_values);
+    //     tmpl.eval_to_state(context).unwrap().render_block(block_name).unwrap().into_bytes()
+    // }
+
 }
 
 impl<'a, T> Deref for ServerRequest<'a, T> {

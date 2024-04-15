@@ -1,0 +1,20 @@
+<article class=post>
+  <img src="/static/images/pineapple.svg" alt="pineapple avatar" width=50 height=50 class=user-avi>
+  <div class=content>
+    <div class=userinfo>
+      <address>
+        <span class=user>{{ post.display_name }}</span> -
+        <span class=handle>{{ post.handle }}</span>
+      </address>
+      <button class=delete
+              hx-delete="/posts/{{ post.post_id }}"
+              hx-target="closest article"
+              hx-swap="outerHTML"
+              hx-confirm="Are you sure you want to delete this post?"
+      >Delete
+      </button>
+    </div>
+    <p>{{ post.content }}</p>
+    <footer>{{ post.created_at }}</footer>
+  </div>
+</article>

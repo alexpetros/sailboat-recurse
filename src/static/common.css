@@ -77,21 +77,11 @@ address {
 }
 
 main {
-  width: 100%;
-  padding-top: 20px;
+  padding: 1rem;
 }
 
 h1 {
   margin-top: 0;
-}
-
-article.post {
-  border: 1px solid black;
-  max-width: 400px;
-}
-
-.post .user {
-  font-weight: bold;
 }
 
 .profile-search-result {
@@ -126,8 +116,19 @@ article.post {
   align-self: center;
 }
 
-.post {
-  padding: 5px 5px;
+.feed h2 {
+  border-bottom: 2px solid lightgray;
+}
+
+article.post {
+  border-bottom: 1px solid gray;
+  padding: 15px 0;
+  display: grid;
+  grid-template-columns: 70px 1fr;
+}
+
+.post .user {
+  font-weight: bold;
 }
 
 .post button.delete {
@@ -141,4 +142,10 @@ article.post {
 
 .post footer {
   color: gray;
+}
+
+.post .user-avi {
+  height: 50px;
+  width: 50px;
+  display: inline-block;
 }

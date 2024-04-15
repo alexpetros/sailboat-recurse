@@ -1,18 +1,18 @@
 use crate::server::error;
 use crate::server::error::body_not_utf8;
 use minijinja::context;
-use crate::queries::get_posts_in_profile;
 use tracing::log::debug;
-use serde::Deserialize;
-use serde::Serialize;
-use crate::server::server_request::{IncomingRequest};
+use serde::{Deserialize, Serialize};
+use crate::server::server_request::IncomingRequest;
 use crate::server::server_response::{ServerResponse, send};
 
 #[derive(Debug, Serialize)]
 struct Post {
-    author_name: String,
-    author_handle: String,
-    content: String
+    post_id: i64,
+    content: String,
+    created_at: i64,
+    display_name: String,
+    handle: String
 }
 
 #[derive(Debug, Deserialize)]
@@ -29,14 +29,31 @@ pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
         "INSERT INTO posts (profile_id, content) VALUES (?1, ?2)",
         (&profile_id, &form.content)
     )?;
+    let post_id = req.db.last_insert_rowid();
 
-    let posts = get_posts_in_profile(&req.db, profile_id)?;
-    let body = req.render_block("profile.html", "profile", context! { posts });
+    let post: Post = req.db.query_row("
+        SELECT post_id, content, created_at, display_name, handle
+        FROM posts
+        LEFT JOIN profiles USING (profile_id)
+        WHERE post_id = ?1
+        ", (post_id,), |row| {
+          let post = Post {
+            post_id: row.get(0)?,
+            content: row.get(1)?,
+            created_at: row.get(2)?,
+            display_name: row.get(3)?,
+            handle: row.get(4)?,
+          };
+          Ok(post)
+        })?;
+
+    let body = req.render("_partials/post.html", context! { post });
+
     Ok(send(body))
 }
 
 pub fn delete(req: IncomingRequest<'_>) -> ServerResponse {
-    let post_param = req.uri().path().split("/")
+    let post_param = req.uri().path().split('/')
         .nth(2)
         .ok_or(error::bad_request("Missing ID"))?;
 

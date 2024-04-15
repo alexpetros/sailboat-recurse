@@ -16,9 +16,12 @@ trap cleanup EXIT
 # Start ngrok and hide the output
 ngrok http 3000 --log=stdout > /dev/null &
 NGROK_PID=$!
-sleep .5
 
-export SB_DOMAIN=$(curl localhost:4040/api/tunnels | sed -nr 's/.*"public_url":"https:\/\/([^"]*)".*/\1/p')
+while [[ -z "${SB_DOMAIN-}" ]]; do
+  sleep .5
+  export SB_DOMAIN=$(curl localhost:4040/api/tunnels | sed -nr 's/.*"public_url":"https:\/\/([^"]*)".*/\1/p')
+done
+
 echo Ngrok running at $SB_DOMAIN
 cargo watch -x run
 

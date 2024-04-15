@@ -16,7 +16,7 @@ struct Profile {
 }
 
 pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
-    let posts = get_posts_in_profile(&req.db, 1)?;
+    let posts = get_posts_in_profile(&req.db, req.locals.current_profile)?;
     let mut query = req.db.prepare("SELECT count(*) FROM followed_actors")?;
     let follow_count: i64 = query.query_row((), |row| { row.get(0) })?;
 

@@ -27,28 +27,12 @@
 <p style="line-break: anywhere">{{ req_body }}</p>
 
 {% block profile %}
-<section class=profile>
+<section class=feed>
 <h2>profile</h2>
 {% for post in posts %}
-<article class=post>
-  <div class=userinfo>
-    <address>
-      <span class=user>{{ post.display_name }}</span> -
-      <span class=handle>{{ post.handle }}</span>
-    </address>
-    <button class=delete
-            hx-delete="/posts/{{ post.post_id }}"
-            hx-target="closest article"
-            hx-swap="outerHTML"
-            hx-confirm="Are you sure you want to delete this post?"
-    >Delete
-    </button>
-    </div>
-    <p>{{ post.content }}</p>
-    <footer>{{ post.created_at }}</footer>
-  </article>
-  {% endfor %}
-  </section>
+  {% include '_partials/post.html' %}
+{% endfor %}
+</section>
 {% endblock %}
 
 {% endblock %}
