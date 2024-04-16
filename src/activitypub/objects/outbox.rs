@@ -7,8 +7,8 @@ pub enum OrderedCollectionType {
     OrderedCollection
 }
 
-// This is here to acknowledgte that these could just be embedded JSON themselves
-// Although Mastodon doesn't do that so I'm going to punt on it for now and assume they're links
+// This is here to acknowledge that these could just be embedded JSON themselves
+// Although Mastodon doesn't do that, so I'm going to punt on it for now and assume they're links
 // type PageOrLink = String;
 
 #[derive(Debug, Serialize, Deserialize)]

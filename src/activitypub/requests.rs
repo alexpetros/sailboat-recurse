@@ -5,14 +5,12 @@ use openssl::pkey;
 use reqwest::RequestBuilder;
 use chrono::Utc;
 use chrono_tz::Etc::GMT;
+use serde::de::DeserializeOwned;
 use crate::activitypub::SHORT_ACCEPT_HEADER;
-use crate::activitypub::objects::actor::Actor;
 use crate::activitypub::objects::webfinger::WebFinger;
 use crate::activitypub::signature::get_signature_header;
 use crate::server::error::{map_bad_gateway, ServerError};
 use crate::server::utils;
-
-use super::objects::outbox::{OrderedCollectionPage, Outbox};
 
 fn build_activitypub_request(method: Method, domain: &str, profile_id: i64, uri: &Uri, pkey: PKey<pkey::Private>) -> Result<RequestBuilder, ServerError> {
     let date = Utc::now().with_timezone(&GMT);
@@ -31,36 +29,16 @@ fn build_activitypub_request(method: Method, domain: &str, profile_id: i64, uri:
     Ok(request)
 }
 
-
-// TODO this could probably be a "Valid activitypub URI type"
-pub async fn get_remote_actor(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<Actor, ServerError> {
+pub async fn get_from_ap<'a, T>(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<T, ServerError>
+    where T: DeserializeOwned {
     let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes())?;
 
     let request = build_activitypub_request(Method::GET, domain, profile_id, uri, pkey)?;
     let res = request.send().await.map_err(map_bad_gateway)?;
 
     let body = res.text().await.map_err(map_bad_gateway)?;
-    let actor: Actor = utils::deserialize_json(&body)?;
-
-    Ok(actor)
-}
-
-pub async fn get_outbox(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<Outbox, ServerError> {
-    let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes())?;
-    let request = build_activitypub_request(Method::GET, domain, profile_id, uri, pkey)?;
-    let res = request.send().await.map_err(map_bad_gateway)?;
-    let body = res.text().await.map_err(map_bad_gateway)?;
-    let outbox: Outbox = utils::deserialize_json(&body)?;
-    Ok(outbox)
-}
-
-pub async fn get_outbox_page(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<OrderedCollectionPage, ServerError> {
-    let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes())?;
-    let request = build_activitypub_request(Method::GET, domain, profile_id, uri, pkey)?;
-    let res = request.send().await.map_err(map_bad_gateway)?;
-    let body = res.text().await.map_err(map_bad_gateway)?;
-    let outbox: OrderedCollectionPage = utils::deserialize_json(&body)?;
-    Ok(outbox)
+    let item: T = utils::deserialize_json(&body)?;
+    Ok(item)
 }
 
 pub async fn get_webfinger(host: &str, account_name: &str) -> Result<WebFinger, ServerError> {
@@ -77,4 +55,3 @@ pub async fn get_webfinger(host: &str, account_name: &str) -> Result<WebFinger, 
     let web_finger: WebFinger = utils::deserialize_json(&text)?;
     Ok(web_finger)
 }
-

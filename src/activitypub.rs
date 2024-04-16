@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use crate::server::error::{bad_request, ServerError};
 
 pub mod signature;
@@ -27,8 +28,8 @@ impl FullHandle {
     }
 }
 
-impl ToString for FullHandle {
-    fn to_string(&self) -> String {
-        format!("@{}@{}", self.preferred_username, self.host)
+impl Display for FullHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", format!("@{}@{}", self.preferred_username, self.host))
     }
 }

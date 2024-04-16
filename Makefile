@@ -22,6 +22,10 @@ test:
 	cargo test
 	@./test/integration/run-integration-tests.sh
 
+.PHONY: wcheck
+wcheck:
+	cargo watch $(WATCH_FLAGS) -s 'cargo check'
+
 .PHONY: wtest
 wtest:
 	cargo watch $(WATCH_FLAGS) -s 'cargo test && ./test/integration/run-integration-tests.sh'
