@@ -8,7 +8,7 @@ use crate::server::server_response::{self, redirect, ServerResponse};
 #[derive(Serialize)]
 struct Profile {
     profile_id: i64,
-    handle: String,
+    preferred_username: String,
     display_name: String,
     internal_name: String,
 }
@@ -20,12 +20,12 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
 
 
     let profile = req.db.query_row("
-        SELECT profile_id, handle, display_name, internal_name
+        SELECT profile_id, preferred_username, display_name, internal_name
         FROM profiles where profile_id = ?1"
         , [ req.locals.current_profile ], |row| {
             let profile = Profile {
                 profile_id: row.get(0)?,
-                handle: row.get(1)?,
+                preferred_username: row.get(1)?,
                 display_name: row.get(2)?,
                 internal_name: row.get(3)?,
             };

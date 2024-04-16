@@ -1,5 +1,10 @@
+use rusqlite::Error::QueryReturnedNoRows;
+use rusqlite::Error::SqliteFailure;
 use tracing::debug;
 use tracing::warn;
+use crate::server::error::bad_gateway;
+use crate::server::error::map_bad_gateway;
+use crate::server::error::not_found;
 use crate::server::server_response;
 use hyper::StatusCode;
 use serde::Deserialize;
@@ -49,16 +54,19 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
     let profile = req.db.query_row("
         SELECT profile_id
         FROM profiles
-        WHERE handle = ?1
+        WHERE preferred_username = ?1
     ", [ handle ], |row| {
         let profile = Profile { profile_id: row.get(0)? };
         Ok(profile)
     });
+    println!("{:?}", profile);
 
     let profile = match profile {
-        Ok(x) => x,
-        Err(_) => return send_status(StatusCode::NOT_FOUND)
-    };
+        Ok(x) => Ok(x),
+        Err(QueryReturnedNoRows) => Err(not_found()),
+        Err(SqliteFailure(_, Some(m))) => Err(bad_gateway(&m)),
+        Err(e) => Err(map_bad_gateway(e)),
+    }?;
 
     let self_link = WebFingerLink {
         rel: "self".to_owned(),

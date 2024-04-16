@@ -75,6 +75,14 @@ pub fn map_bad_gateway(e: impl Error) -> ServerError {
     }
 }
 
+pub fn not_found() -> ServerError {
+    ServerError {
+        prefix: "",
+        message: "".to_string(),
+        status_code: StatusCode::NOT_FOUND
+    }
+}
+
 pub fn bad_request(message: &str) -> ServerError {
     ServerError {
         prefix: "[BAD REQUEST]",

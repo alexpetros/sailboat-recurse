@@ -44,8 +44,8 @@ pub async fn get(mut req: IncomingRequest<'_>) -> ServerResponse {
             _ => return None
         };
         let context = context! {
-            name => actor.name,
-            handle => handle.to_string(),
+            actor_name => actor.name,
+            actor_handle => handle.to_string(),
             content => note.content,
             created_at => note.published,
             avi_url => actor.icon.as_ref().unwrap().url.clone()

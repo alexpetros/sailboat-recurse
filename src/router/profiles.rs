@@ -12,7 +12,7 @@ pub mod _profile_id;
 #[derive(Serialize, Deserialize)]
 struct Profile {
     profile_id: i64,
-    handle: String,
+    preferred_username: String,
     display_name: String,
     internal_name: String,
     private_key_pem: String
@@ -20,7 +20,7 @@ struct Profile {
 
 #[derive(Deserialize)]
 struct NewProfile {
-    handle: String,
+    preferred_username: String,
     display_name: String,
     internal_name: String
 }
@@ -38,9 +38,9 @@ pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
     let pkey = String::from_utf8(pkey).unwrap();
 
     req.db.execute(
-        "INSERT INTO profiles (handle, display_name, internal_name, private_key_pem)
+        "INSERT INTO profiles (preferred_username, display_name, internal_name, private_key_pem)
         VALUES (?1, ?2, ?3, ?4)",
-        (&form.handle, &form.display_name, &form.internal_name, &pkey)
+        (&form.preferred_username, &form.display_name, &form.internal_name, &pkey)
     )?;
 
     let id = req.db.last_insert_rowid();

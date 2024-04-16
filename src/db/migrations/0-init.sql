@@ -9,7 +9,7 @@ CREATE TABLE profiles (
   profile_id INTEGER PRIMARY KEY,
   internal_name TEXT NOT NULL,
   display_name TEXT NOT NULL,
-  handle TEXT NOT NULL,
+  preferred_username TEXT NOT NULL,
   private_key_pem TEXT NOT NULL
 ) STRICT;
 

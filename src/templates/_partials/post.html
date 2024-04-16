@@ -1,11 +1,11 @@
 <article class=post>
   <img src="{{ post.avi_url if post.avi_url else '/static/images/pineapple.svg' }}"
-       alt="pineapple avatar" width=50 height=50 class=user-avi>
+       alt="user avatar" width=50 height=50 class=user-avi>
   <div class=content>
     <div class=userinfo>
       <address>
-        <span class=user>{{ post.name }}</span> -
-        <span class=handle>{{ post.handle }}</span>
+        <span class=user>{{ post.actor_name }}</span> -
+        <span class=preferred_username>{{ post.actor_handle }}</span>
       </address>
       <button class=delete
               hx-delete="/posts/{{ post.post_id }}"

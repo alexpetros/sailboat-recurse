@@ -12,6 +12,8 @@ use crate::server::server_response;
 use crate::server::error::bad_request;
 use crate::server::server_response::{send, send_status, ServerResponse};
 
+pub mod outbox;
+
 pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
     let profile_param = req.get_trailing_param("Missing profile ID")?;
 
@@ -21,12 +23,12 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
     }.parse::<i64>().map_err(|_| { bad_request("Invalid profile ID") })?;
 
     let profile = req.db.query_row("
-        SELECT profile_id, handle, display_name, internal_name, private_key_pem
+        SELECT profile_id, preferred_username, display_name, internal_name, private_key_pem
         FROM profiles where profile_id = ?1"
         , [ profile_id ], |row| {
             let profile = Profile {
                 profile_id: row.get(0)?,
-                handle: row.get(1)?,
+                preferred_username: row.get(1)?,
                 display_name: row.get(2)?,
                 internal_name: row.get(3)?,
                 private_key_pem: row.get(4)?
@@ -83,10 +85,10 @@ fn serve_json_profile(req: IncomingRequest<'_>, profile: Profile) -> ServerRespo
         context,
         id: id.to_owned(),
         url: id.to_owned(),
-        name: profile.handle.to_owned(),
+        name: profile.display_name,
         actor_type: ActorType::Person,
         summary: Some("We can't rewind, we've gone too far".to_owned()),
-        preferred_username: profile.handle,
+        preferred_username: profile.preferred_username,
         icon: None,
         inbox: Some(inbox),
         outbox: Some(outbox),

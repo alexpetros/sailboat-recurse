@@ -12,7 +12,7 @@ use crate::server::error::{map_bad_gateway, ServerError};
 pub struct Post {
     post_id: i64,
     display_name: String,
-    handle: String,
+    preferred_username: String,
     content: String,
     created_at: String
 }
@@ -21,7 +21,7 @@ pub fn get_posts_in_profile (db: &Connection, profile_id: i64) -> Result<Vec<Pos
     let mut query = db.prepare(
         "SELECT post_id,
             display_name,
-            handle,
+            preferred_username,
             content,
             created_at
          FROM posts
@@ -38,7 +38,7 @@ pub fn get_posts_in_profile (db: &Connection, profile_id: i64) -> Result<Vec<Pos
         let post = Post {
             post_id: row.get(0)?,
             display_name: row.get(1)?,
-            handle: row.get(2)?,
+            preferred_username: row.get(2)?,
             content: row.get(3)?,
             created_at
         };

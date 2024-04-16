@@ -12,7 +12,7 @@ struct Post {
     content: String,
     created_at: i64,
     display_name: String,
-    handle: String
+    preferred_username: String
 }
 
 #[derive(Debug, Deserialize)]
@@ -32,7 +32,7 @@ pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
     let post_id = req.db.last_insert_rowid();
 
     let post: Post = req.db.query_row("
-        SELECT post_id, content, created_at, display_name, handle
+        SELECT post_id, content, created_at, display_name, preferred_username
         FROM posts
         LEFT JOIN profiles USING (profile_id)
         WHERE post_id = ?1
@@ -42,7 +42,7 @@ pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
             content: row.get(1)?,
             created_at: row.get(2)?,
             display_name: row.get(3)?,
-            handle: row.get(4)?,
+            preferred_username: row.get(4)?,
           };
           Ok(post)
         })?;

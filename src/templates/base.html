@@ -37,12 +37,13 @@
 {% if env == 'debug' %}
 <script>
   let _debug_time = undefined
-  setInterval(async () => {
+  let interval = setInterval(async () => {
     const res = await fetch('/debug')
     const body = await res.text()
     if (_debug_time === undefined) {
       _debug_time = body
     } else if (_debug_time !== body) {
+      clearInterval(internal)
       location.reload()
     }
   }, 1000)

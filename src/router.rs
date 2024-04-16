@@ -81,6 +81,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
         (POST, ["profiles"]) => profiles::post(req).await,
         (GET, ["profiles", "new"]) => profiles::new::get(req),
         (GET, ["profiles", _]) => _profile_id::get(req).await,
+        // (GET, ["profiles", _, "outbox"]) => outbox::get(req),
 
         (GET, ["switch", _]) => switch::get(req),
 
