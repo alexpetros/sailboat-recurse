@@ -1,3 +1,4 @@
+use minijinja::Value;
 use serde::{Deserialize, Serialize};
 use openssl::pkey::PKey;
 use crate::activitypub::objects::Context;
@@ -53,6 +54,14 @@ pub struct Actor {
     #[serde(rename = "publicKey")]
     pub public_key: PublicKey,
     pub icon: Option<Icon>
+}
+
+// TODO seems like minijinja could figure this out on its own via the serde::Serialize derivation
+// Maybe try and PR that?
+impl From<Actor> for minijinja::Value {
+    fn from(value: Actor) -> Self {
+        Value::from_serializable(&value)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]

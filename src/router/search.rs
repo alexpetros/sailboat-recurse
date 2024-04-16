@@ -1,4 +1,4 @@
-use minijinja::{context, Value};
+use minijinja::context;
 use serde::Deserialize;
 use crate::activitypub::get_full_handle;
 
@@ -31,12 +31,9 @@ pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
     let icon_url = actor.icon.as_ref().map(|i| i.url.clone()).unwrap_or("".to_owned());
     let local_url = handle.get_local_url();
 
-    let actor = Value::from_serializable(&actor);
-    let actor = context!{
-        local_url,
-        icon_url,
-        ..actor
-    };
-    let body = req.render("_partials/feed-search-result.html", context! { actor })?;
+    let actor = context!{ local_url, icon_url, ..actor };
+    let context = context! { actor };
+
+    let body = req.render("_partials/feed-search-result.html", context)?;
     Ok(send(body))
 }
