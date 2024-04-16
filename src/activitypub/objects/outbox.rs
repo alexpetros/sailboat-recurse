@@ -7,10 +7,6 @@ pub enum OrderedCollectionType {
     OrderedCollection
 }
 
-// This is here to acknowledge that these could just be embedded JSON themselves
-// Although Mastodon doesn't do that, so I'm going to punt on it for now and assume they're links
-// type PageOrLink = String;
-
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum PageOrLink {
@@ -29,6 +25,7 @@ pub struct OrderedCollectionPage {
 }
 // https://www.w3.org/TR/activitystreams-core/#collection
 #[derive(Debug, Serialize, Deserialize)]
+
 pub struct Outbox {
     #[serde(rename = "@context")]
     pub context: AtContext,

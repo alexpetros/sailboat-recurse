@@ -5,7 +5,7 @@ use hyper::Uri;
 use tracing::warn;
 use crate::activitypub::FullHandle;
 use crate::activitypub::objects::actor::{Actor, LinkType};
-use crate::activitypub::requests::{get_from_ap, get_webfinger};
+use crate::activitypub::requests::{get_actor, get_webfinger};
 use crate::server::error::{map_bad_gateway, ServerError};
 
 #[derive(Debug, Serialize)]
@@ -99,7 +99,7 @@ pub async fn get_or_search_for_actor(db: &mut Connection, domain: &str, handle: 
         map_bad_gateway(e)
     })?;
 
-    let actor: Actor = get_from_ap(domain, PROFILE_ID, &uri, &private_key_pem).await?;
+    let actor = get_actor(domain, PROFILE_ID, &uri, &private_key_pem).await?;
 
 
     // let actor = Actor {

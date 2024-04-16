@@ -2,9 +2,9 @@ use hyper::Uri;
 use minijinja::context;
 
 use crate::activitypub::get_full_handle;
-use crate::activitypub::objects::outbox::{OrderedCollectionPage, Outbox, PageOrLink};
 use crate::activitypub::objects::outbox::Object::Note;
-use crate::activitypub::requests::get_from_ap;
+use crate::activitypub::objects::outbox::PageOrLink;
+use crate::activitypub::requests::{get_outbox, get_outbox_page};
 use crate::queries;
 use crate::server::error::bad_gateway;
 use crate::server::server_request::IncomingRequest;
@@ -30,14 +30,14 @@ pub async fn get(mut req: IncomingRequest<'_>) -> ServerResponse {
         Some(s) => s.clone().parse::<Uri>(),
         None => return Err(bad_gateway("No outbox provided"))
     }.map_err(|_| bad_gateway("Invalid outbox URI"))?;
-    let outbox: Outbox = get_from_ap(&req.domain, profile_id, &outbox_uri, &private_key_pem).await?;
+    let outbox = get_outbox(&req.domain, profile_id, &outbox_uri, &private_key_pem).await?;
 
     let first_page_url = match outbox.first {
         PageOrLink::Link(s) => s.clone().parse::<Uri>(),
         PageOrLink::Page(_p) => todo!()
     }.map_err(|_| bad_gateway("Invalid outbox page URI"))?;
 
-    let page: OrderedCollectionPage = get_from_ap(&req.domain, profile_id, &first_page_url, &private_key_pem).await?;
+    let page = get_outbox_page(&req.domain, profile_id, &first_page_url, &private_key_pem).await?;
     let posts: Vec<_> = page.ordered_items.into_iter().filter_map(|a| {
         let note = match a.object {
             Note(n) => n,

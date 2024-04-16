@@ -6,6 +6,8 @@ use reqwest::RequestBuilder;
 use chrono::Utc;
 use chrono_tz::Etc::GMT;
 use serde::de::DeserializeOwned;
+use crate::activitypub::objects::actor::Actor;
+use crate::activitypub::objects::outbox::{OrderedCollectionPage, Outbox};
 use crate::activitypub::SHORT_ACCEPT_HEADER;
 use crate::activitypub::objects::webfinger::WebFinger;
 use crate::activitypub::signature::get_signature_header;
@@ -29,7 +31,7 @@ fn build_activitypub_request(method: Method, domain: &str, profile_id: i64, uri:
     Ok(request)
 }
 
-pub async fn get_from_ap<'a, T>(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<T, ServerError>
+async fn get_from_ap<'a, T>(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<T, ServerError>
     where T: DeserializeOwned {
     let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes())?;
 
@@ -40,6 +42,19 @@ pub async fn get_from_ap<'a, T>(domain: &str, profile_id: i64, uri: &Uri, privat
     let item: T = utils::deserialize_json(&body)?;
     Ok(item)
 }
+
+pub async fn get_actor(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<Actor, ServerError> {
+    Ok(get_from_ap(domain, profile_id, uri, private_key_pem).await?)
+}
+
+pub async fn get_outbox(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<Outbox, ServerError> {
+    Ok(get_from_ap(domain, profile_id, uri, private_key_pem).await?)
+}
+
+pub async fn get_outbox_page(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<OrderedCollectionPage, ServerError> {
+    Ok(get_from_ap(domain, profile_id, uri, private_key_pem).await?)
+}
+
 
 pub async fn get_webfinger(host: &str, account_name: &str) -> Result<WebFinger, ServerError> {
     let uri = format!("https://{}/.well-known/webfinger", host);
