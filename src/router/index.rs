@@ -14,7 +14,7 @@ struct Profile {
 }
 
 pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
-    let posts = get_posts_in_profile(&req.db, req.locals.current_profile)?;
+    let posts = get_posts_in_profile(&req.db, req.current_profile.profile_id)?;
     let mut query = req.db.prepare("SELECT count(*) FROM followed_actors")?;
     let follow_count: i64 = query.query_row((), |row| { row.get(0) })?;
 
@@ -22,7 +22,7 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
     let profile = req.db.query_row("
         SELECT profile_id, preferred_username, display_name, internal_name
         FROM profiles where profile_id = ?1"
-        , [ req.locals.current_profile ], |row| {
+        , [ req.current_profile.profile_id ], |row| {
             let profile = Profile {
                 profile_id: row.get(0)?,
                 preferred_username: row.get(1)?,

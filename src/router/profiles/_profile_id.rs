@@ -71,7 +71,7 @@ async fn serve_html_profile(req: IncomingRequest<'_>, profile: Profile) -> Serve
 }
 
 fn serve_json_profile(req: IncomingRequest<'_>, profile: Profile) -> ServerResponse {
-    let domain = &req.domain;
+    let domain = &req.current_profile.domain;
 
     let id = format!("https://{}/profiles/{}", domain, profile.profile_id);
     let inbox = format!("https://{}/inbox", domain);

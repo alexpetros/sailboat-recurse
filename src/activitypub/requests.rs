@@ -1,7 +1,5 @@
 use hyper::{Method, Uri};
-use openssl::pkey::PKey;
 use hyper::header::{ACCEPT, DATE, HeaderName, HeaderValue, USER_AGENT};
-use openssl::pkey;
 use reqwest::RequestBuilder;
 use chrono::Utc;
 use chrono_tz::Etc::GMT;
@@ -12,9 +10,11 @@ use crate::activitypub::SHORT_ACCEPT_HEADER;
 use crate::activitypub::objects::webfinger::WebFinger;
 use crate::activitypub::signature::get_signature_header;
 use crate::server::error::{map_bad_gateway, ServerError};
+use crate::server::server_request::CurrentProfile;
 use crate::server::utils;
 
-fn build_activitypub_request(method: Method, domain: &str, profile_id: i64, uri: &Uri, pkey: PKey<pkey::Private>) -> Result<RequestBuilder, ServerError> {
+fn build_activitypub_request(method: Method, uri: &Uri, current_profile: &CurrentProfile) -> Result<RequestBuilder, ServerError> {
+    let CurrentProfile { domain, profile_id, pkey } = current_profile;
     let date = Utc::now().with_timezone(&GMT);
     let date_header = HeaderValue::from_bytes(date.format("%a, %d %b %Y %X %Z").to_string().as_bytes())?;
     let key_id = format!("https://{}/profiles/{}#main-key", &domain, profile_id);
@@ -31,11 +31,9 @@ fn build_activitypub_request(method: Method, domain: &str, profile_id: i64, uri:
     Ok(request)
 }
 
-async fn get_from_ap<'a, T>(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<T, ServerError>
+async fn get_from_ap<'a, T>(uri: &Uri, current_profile: &CurrentProfile) -> Result<T, ServerError>
     where T: DeserializeOwned {
-    let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes())?;
-
-    let request = build_activitypub_request(Method::GET, domain, profile_id, uri, pkey)?;
+    let request = build_activitypub_request(Method::GET, uri, current_profile)?;
     let res = request.send().await.map_err(map_bad_gateway)?;
 
     let body = res.text().await.map_err(map_bad_gateway)?;
@@ -43,16 +41,16 @@ async fn get_from_ap<'a, T>(domain: &str, profile_id: i64, uri: &Uri, private_ke
     Ok(item)
 }
 
-pub async fn get_actor(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<Actor, ServerError> {
-    Ok(get_from_ap(domain, profile_id, uri, private_key_pem).await?)
+pub async fn get_actor(uri: &Uri, current_profile: &CurrentProfile) -> Result<Actor, ServerError> {
+    Ok(get_from_ap(uri, current_profile).await?)
 }
 
-pub async fn get_outbox(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<Outbox, ServerError> {
-    Ok(get_from_ap(domain, profile_id, uri, private_key_pem).await?)
+pub async fn get_outbox(uri: &Uri, current_profile: &CurrentProfile) -> Result<Outbox, ServerError> {
+    Ok(get_from_ap(uri, current_profile).await?)
 }
 
-pub async fn get_outbox_page(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<OrderedCollectionPage, ServerError> {
-    Ok(get_from_ap(domain, profile_id, uri, private_key_pem).await?)
+pub async fn get_outbox_page(uri: &Uri, current_profile: &CurrentProfile) -> Result<OrderedCollectionPage, ServerError> {
+    Ok(get_from_ap(uri, current_profile).await?)
 }
 
 

@@ -7,6 +7,7 @@ use crate::activitypub::FullHandle;
 use crate::activitypub::objects::actor::{Actor, LinkType};
 use crate::activitypub::requests::{get_actor, get_webfinger};
 use crate::server::error::{map_bad_gateway, ServerError};
+use crate::server::server_request::CurrentProfile;
 
 #[derive(Debug, Serialize)]
 pub struct Post {
@@ -53,10 +54,7 @@ pub fn get_posts_in_profile (db: &Connection, profile_id: i64) -> Result<Vec<Pos
     Ok(posts)
 }
 
-// TODO don't just use Actor 1, obviously
-const PROFILE_ID: i64 = 1;
-
-pub async fn get_or_search_for_actor(db: &mut Connection, domain: &str, handle: &FullHandle) -> Result<Option<Actor>, ServerError> {
+pub async fn get_or_search_for_actor(_db: &mut Connection, handle: &FullHandle, current_profile: &CurrentProfile) -> Result<Option<Actor>, ServerError> {
     // First check if we are following them
     let FullHandle { preferred_username, host } = handle;
     // let actor = db.query_row("
@@ -78,11 +76,6 @@ pub async fn get_or_search_for_actor(db: &mut Connection, domain: &str, handle: 
 
     // if actor.is_ok() { return Ok(actor.ok()); }
 
-    let private_key_pem: String = db.query_row_and_then(
-        "SELECT private_key_pem FROM profiles WHERE profile_id = ?1",
-        [PROFILE_ID],
-        |row| row.get(0))?;
-
     let web_finger = get_webfinger(host, preferred_username).await?;
     let self_link = web_finger.links
         .as_ref()
@@ -99,7 +92,7 @@ pub async fn get_or_search_for_actor(db: &mut Connection, domain: &str, handle: 
         map_bad_gateway(e)
     })?;
 
-    let actor = get_actor(domain, PROFILE_ID, &uri, &private_key_pem).await?;
+    let actor = get_actor(&uri, current_profile).await?;
 
 
     // let actor = Actor {

@@ -47,7 +47,7 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
 
     debug!("Searching for user {}", handle);
 
-    if domain != req.domain {
+    if domain != req.current_profile.domain {
         return send_status(StatusCode::NOT_FOUND)
     }
 
@@ -59,7 +59,6 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
         let profile = Profile { profile_id: row.get(0)? };
         Ok(profile)
     });
-    println!("{:?}", profile);
 
     let profile = match profile {
         Ok(x) => Ok(x),

@@ -5,6 +5,7 @@ use hyper::body::{Bytes, Incoming};
 use http_body_util::BodyExt;
 use hyper::header::COOKIE;
 use minijinja::{context, Value};
+use openssl::pkey::{PKey, Private};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use tracing::log::warn;
@@ -20,10 +21,15 @@ struct Profile {
     internal_name: String,
 }
 
+pub struct CurrentProfile {
+    pub profile_id: i64,
+    pub domain: String,
+    pub pkey: PKey<Private>,
+}
+
 #[derive(Serialize)]
-pub struct Locals {
+struct Locals {
     profiles: Vec<Profile>,
-    pub current_profile: i64
 }
 
 const ENV: &str = if cfg!(debug_assertions) { "debug" } else { "prod" };
@@ -35,10 +41,10 @@ pub type IncomingRequest<'a> = ServerRequest<'a, Incoming>;
 pub struct ServerRequest<'a, T> {
     pub request: hyper::Request<T>,
     pub global: Arc<GlobalContext<'a>>,
-    pub domain: String,
+    pub current_profile: CurrentProfile,
     pub db: Connection,
     pub cookies: HashMap<String, String>,
-    pub locals: Locals,
+    locals: Locals,
 }
 
 impl<'a, T> ServerRequest<'a, T> {
@@ -48,7 +54,7 @@ impl<'a, T> ServerRequest<'a, T> {
         context! { ..local_values, ..request_values, ..global_values }
     }
 
-    pub fn get_trailing_param(&self, message: &str) -> Result<&str, ServerError>{
+    pub fn get_trailing_param(&self, message: &str) -> Result<&str, ServerError> {
         self.uri().path().split("/")
             .last()
             .ok_or(error::bad_request(message))
@@ -67,7 +73,6 @@ impl<'a, T> ServerRequest<'a, T> {
     //     let context = self.make_context(local_values);
     //     tmpl.eval_to_state(context).unwrap().render_block(block_name).unwrap().into_bytes()
     // }
-
 }
 
 impl<'a, T> Deref for ServerRequest<'a, T> {
@@ -102,25 +107,33 @@ impl<'a, T> ServerRequest<'a, T> {
             .flatten();
 
         let cookies = cookie_string
-            .map(|s| { s.split("; ").collect::<Vec<&str>>()})
+            .map(|s| { s.split("; ").collect::<Vec<&str>>() })
             .unwrap_or(Vec::<&str>::new())
             .iter()
             .filter_map(|s| { s.split_once("=") })
-            .map(|(key, value)| { (key.to_owned(), value.to_owned())})
+            .map(|(key, value)| { (key.to_owned(), value.to_owned()) })
             .collect::<HashMap<String, String>>();
 
-        let current_profile = cookies.get("current_profile")
+        let current_profile_id = cookies.get("current_profile")
             .map(|id| { id.parse::<i64>().ok() })
             .flatten()
             .unwrap_or(DEFAULT_PROFILE);
 
-        let locals = Locals {
-            profiles,
-            current_profile
+        let private_key_pem: String = db.query_row(
+            "SELECT private_key_pem FROM profiles WHERE profile_id = ?1",
+            (current_profile_id, ), |row| {
+                Ok(row.get(0)?)
+            })?;
+        let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes())?;
+        let current_profile = CurrentProfile {
+            profile_id: current_profile_id,
+            pkey,
+            domain,
         };
+        let locals = Locals { profiles };
 
 
-        Ok(Self { request, global: g_ctx.clone(), db, domain, locals, cookies })
+        Ok(Self { request, global: g_ctx.clone(), db, locals, cookies, current_profile })
     }
 }
 
@@ -134,13 +147,13 @@ impl<'a> ServerRequest<'a, Incoming> {
             .map_err(|_| { body_too_large() })?;
 
         let request = hyper::Request::from_parts(parts, bytes);
-        let domain = self.domain;
+        let current_profile = self.current_profile;
         let global = self.global;
         let db = self.db;
         let locals = self.locals;
         let cookies = self.cookies;
 
-        Ok(ServerRequest { request, global, db, domain, cookies, locals })
+        Ok(ServerRequest { request, global, db, current_profile, cookies, locals })
     }
 
     pub async fn to_text(self) -> Result<ServerRequest<'a, String>, ServerError> {
@@ -156,12 +169,12 @@ impl<'a> ServerRequest<'a, Bytes> {
         let str = String::from_utf8(body.to_vec()).map_err(|_| { body_not_utf8() })?;
         let request = hyper::Request::from_parts(parts, str);
 
-        let domain = self.domain;
+        let current_profile = self.current_profile;
         let global = self.global;
         let db = self.db;
         let locals = self.locals;
         let cookies = self.cookies;
-        Ok(ServerRequest { request, global, db, domain, cookies, locals })
+        Ok(ServerRequest { request, global, db, current_profile, cookies, locals })
     }
 }
 
