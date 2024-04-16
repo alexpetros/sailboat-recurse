@@ -8,13 +8,12 @@
 
 <section class=card>
 <h1>{{ actor.name }}</h1>
-<div>@{{ actor.preferred_username }}</div>
-  Following: <a href="/following">{{ follow_count }}</a>
+<div>{{ actor.handle }}</div>
+<!--  Following: <a href="/following">{{ follow_count }}</a>-->
 </section>
 
 <section class="card feed">
 <h2>Feed</h2>
-{{ outbox }}
 {% for post in posts %}
   {%- include '_partials/post.html' %}
 {% endfor %}

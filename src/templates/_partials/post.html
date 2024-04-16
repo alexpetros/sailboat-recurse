@@ -1,9 +1,10 @@
 <article class=post>
-  <img src="/static/images/pineapple.svg" alt="pineapple avatar" width=50 height=50 class=user-avi>
+  <img src="{{ post.avi_url if post.avi_url else '/static/images/pineapple.svg' }}"
+       alt="pineapple avatar" width=50 height=50 class=user-avi>
   <div class=content>
     <div class=userinfo>
       <address>
-        <span class=user>{{ post.display_name }}</span> -
+        <span class=user>{{ post.name }}</span> -
         <span class=handle>{{ post.handle }}</span>
       </address>
       <button class=delete
@@ -14,7 +15,7 @@
       >Delete
       </button>
     </div>
-    <p>{{ post.content }}</p>
+    <p>{{ post.content | safe }}</p>
     <footer>{{ post.created_at }}</footer>
   </div>
 </article>

@@ -26,3 +26,9 @@ impl FullHandle {
         format!("/feeds/@{}@{}", self.preferred_username, self.host)
     }
 }
+
+impl ToString for FullHandle {
+    fn to_string(&self) -> String {
+        format!("@{}@{}", self.preferred_username, self.host)
+    }
+}

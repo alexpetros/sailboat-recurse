@@ -12,6 +12,8 @@ use crate::activitypub::signature::get_signature_header;
 use crate::server::error::{map_bad_gateway, ServerError};
 use crate::server::utils;
 
+use super::objects::outbox::{OrderedCollectionPage, Outbox};
+
 fn build_activitypub_request(method: Method, domain: &str, profile_id: i64, uri: &Uri, pkey: PKey<pkey::Private>) -> Result<RequestBuilder, ServerError> {
     let date = Utc::now().with_timezone(&GMT);
     let date_header = HeaderValue::from_bytes(date.format("%a, %d %b %Y %X %Z").to_string().as_bytes())?;
@@ -43,16 +45,22 @@ pub async fn get_remote_actor(domain: &str, profile_id: i64, uri: &Uri, private_
     Ok(actor)
 }
 
-pub async fn get_outbox(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<String, ServerError> {
+pub async fn get_outbox(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<Outbox, ServerError> {
     let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes())?;
-
     let request = build_activitypub_request(Method::GET, domain, profile_id, uri, pkey)?;
     let res = request.send().await.map_err(map_bad_gateway)?;
-
     let body = res.text().await.map_err(map_bad_gateway)?;
-    // let actor: Outbox = utils::deserialize_json(&body)?;
+    let outbox: Outbox = utils::deserialize_json(&body)?;
+    Ok(outbox)
+}
 
-    Ok(body)
+pub async fn get_outbox_page(domain: &str, profile_id: i64, uri: &Uri, private_key_pem: &str) -> Result<OrderedCollectionPage, ServerError> {
+    let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes())?;
+    let request = build_activitypub_request(Method::GET, domain, profile_id, uri, pkey)?;
+    let res = request.send().await.map_err(map_bad_gateway)?;
+    let body = res.text().await.map_err(map_bad_gateway)?;
+    let outbox: OrderedCollectionPage = utils::deserialize_json(&body)?;
+    Ok(outbox)
 }
 
 pub async fn get_webfinger(host: &str, account_name: &str) -> Result<WebFinger, ServerError> {

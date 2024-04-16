@@ -1,15 +1,6 @@
 use serde::{Deserialize, Serialize};
 use openssl::pkey::PKey;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub enum Context {
-    #[serde(rename = "https://www.w3.org/ns/activitystreams")]
-    ActivityStreams,
-    #[serde(rename = "https://w3id.org/security/v1")]
-    SecurityV1,
-    #[serde(untagged)]
-    Unknown(serde_json::Value),
-}
+use crate::activitypub::objects::Context;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ActorType {
