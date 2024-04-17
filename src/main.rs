@@ -23,6 +23,7 @@ mod static_files;
 mod sqlite;
 mod queries;
 mod activitypub;
+mod templates;
 
 const DEFAULT_DB: &str = "./sailboat.db";
 

@@ -2,18 +2,10 @@ use crate::server::error;
 use crate::server::error::body_not_utf8;
 use minijinja::context;
 use tracing::log::debug;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize};
 use crate::server::server_request::IncomingRequest;
 use crate::server::server_response::{ServerResponse, send};
-
-#[derive(Debug, Serialize)]
-struct Post {
-    post_id: i64,
-    content: String,
-    created_at: i64,
-    display_name: String,
-    preferred_username: String
-}
+use crate::templates::_partials::post::Post;
 
 #[derive(Debug, Deserialize)]
 struct PostForm {
@@ -41,8 +33,8 @@ pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
             post_id: row.get(0)?,
             content: row.get(1)?,
             created_at: row.get(2)?,
-            display_name: row.get(3)?,
-            preferred_username: row.get(4)?,
+            actor_name: row.get(3)?,
+            actor_handle: row.get(4)?,
           };
           Ok(post)
         })?;

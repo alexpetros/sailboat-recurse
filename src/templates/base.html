@@ -43,7 +43,7 @@
     if (_debug_time === undefined) {
       _debug_time = body
     } else if (_debug_time !== body) {
-      clearInterval(internal)
+      clearInterval(interval)
       location.reload()
     }
   }, 1000)

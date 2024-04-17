@@ -1,6 +1,5 @@
 use rusqlite::Connection;
 use chrono::{DateTime, Local};
-use serde::Serialize;
 use hyper::Uri;
 use tracing::warn;
 use crate::activitypub::FullHandle;
@@ -8,21 +7,13 @@ use crate::activitypub::objects::actor::{Actor, LinkType};
 use crate::activitypub::requests::{get_actor, get_webfinger};
 use crate::server::error::{map_bad_gateway, ServerError};
 use crate::server::server_request::CurrentProfile;
-
-#[derive(Debug, Serialize)]
-pub struct Post {
-    post_id: i64,
-    display_name: String,
-    preferred_username: String,
-    content: String,
-    created_at: String
-}
+use crate::templates::_partials::post::Post;
 
 pub fn get_posts_in_profile (db: &Connection, profile_id: i64) -> Result<Vec<Post>, ServerError> {
     let mut query = db.prepare(
         "SELECT post_id,
-            display_name,
-            preferred_username,
+            display_name as actor_name,
+            preferred_username as actor_handle,
             content,
             created_at
          FROM posts
@@ -38,8 +29,8 @@ pub fn get_posts_in_profile (db: &Connection, profile_id: i64) -> Result<Vec<Pos
         let created_at = created_at.format("%b %m %Y, %r").to_string();
         let post = Post {
             post_id: row.get(0)?,
-            display_name: row.get(1)?,
-            preferred_username: row.get(2)?,
+            actor_name: row.get(1)?,
+            actor_handle: row.get(2)?,
             content: row.get(3)?,
             created_at
         };
@@ -48,7 +39,7 @@ pub fn get_posts_in_profile (db: &Connection, profile_id: i64) -> Result<Vec<Pos
 
     let mut posts = Vec::new();
     for post in rows {
-        posts.push(post?)
+        posts.push(post?);
     }
 
     Ok(posts)
