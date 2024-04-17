@@ -16,13 +16,14 @@ struct Profile {
 pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
     let posts = get_posts_in_profile(&req.db, req.current_profile.profile_id)?;
     let mut query = req.db.prepare("SELECT count(*) FROM followed_actors")?;
-    let follow_count: i64 = query.query_row((), |row| { row.get(0) })?;
+    let follow_count: i64 = query.query_row((), |row| row.get(0))?;
 
-
-    let profile = req.db.query_row("
+    let profile = req.db.query_row(
+        "
         SELECT profile_id, preferred_username, display_name, internal_name
-        FROM profiles where profile_id = ?1"
-        , [ req.current_profile.profile_id ], |row| {
+        FROM profiles where profile_id = ?1",
+        [req.current_profile.profile_id],
+        |row| {
             let profile = Profile {
                 profile_id: row.get(0)?,
                 preferred_username: row.get(1)?,
@@ -30,11 +31,12 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
                 internal_name: row.get(3)?,
             };
             Ok(profile)
-        });
+        },
+    );
 
     let profile = match profile {
         Ok(x) => x,
-        Err(_) => return redirect("/profiles/new")
+        Err(_) => return redirect("/profiles/new"),
     };
 
     let context = context! {

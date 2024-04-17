@@ -1,28 +1,38 @@
-use hyper::{Method, Uri};
-use hyper::header::{ACCEPT, DATE, HeaderName, HeaderValue, USER_AGENT};
-use reqwest::RequestBuilder;
-use chrono::Utc;
-use chrono_tz::Etc::GMT;
-use serde::de::DeserializeOwned;
 use crate::activitypub::objects::actor::Actor;
 use crate::activitypub::objects::outbox::{OrderedCollectionPage, Outbox};
-use crate::activitypub::SHORT_ACCEPT_HEADER;
 use crate::activitypub::objects::webfinger::WebFinger;
 use crate::activitypub::signature::get_signature_header;
+use crate::activitypub::SHORT_ACCEPT_HEADER;
 use crate::server::error::{map_bad_gateway, ServerError};
 use crate::server::server_request::CurrentProfile;
 use crate::server::utils;
+use chrono::Utc;
+use chrono_tz::Etc::GMT;
+use hyper::header::{HeaderName, HeaderValue, ACCEPT, DATE, USER_AGENT};
+use hyper::{Method, Uri};
+use reqwest::RequestBuilder;
+use serde::de::DeserializeOwned;
 
-fn build_activitypub_request(method: Method, uri: &Uri, current_profile: &CurrentProfile) -> Result<RequestBuilder, ServerError> {
-    let CurrentProfile { domain, profile_id, pkey } = current_profile;
+fn build_activitypub_request(
+    method: Method,
+    uri: &Uri,
+    current_profile: &CurrentProfile,
+) -> Result<RequestBuilder, ServerError> {
+    let CurrentProfile {
+        domain,
+        profile_id,
+        pkey,
+    } = current_profile;
     let date = Utc::now().with_timezone(&GMT);
-    let date_header = HeaderValue::from_bytes(date.format("%a, %d %b %Y %X %Z").to_string().as_bytes())?;
+    let date_header =
+        HeaderValue::from_bytes(date.format("%a, %d %b %Y %X %Z").to_string().as_bytes())?;
     let key_id = format!("https://{}/profiles/{}#main-key", &domain, profile_id);
     let signature = get_signature_header(&method, &key_id, &uri, date, pkey)?;
 
     let client = reqwest::Client::new();
     let url = uri.to_string();
-    let request = client.request(method, url)
+    let request = client
+        .request(method, url)
         .header(DATE, date_header)
         .header(USER_AGENT, "Mastodon/3.1.3")
         .header(ACCEPT, HeaderValue::from_static(SHORT_ACCEPT_HEADER))
@@ -32,7 +42,9 @@ fn build_activitypub_request(method: Method, uri: &Uri, current_profile: &Curren
 }
 
 async fn get_from_ap<'a, T>(uri: &Uri, current_profile: &CurrentProfile) -> Result<T, ServerError>
-    where T: DeserializeOwned {
+where
+    T: DeserializeOwned,
+{
     let request = build_activitypub_request(Method::GET, uri, current_profile)?;
     let res = request.send().await.map_err(map_bad_gateway)?;
 
@@ -45,14 +57,19 @@ pub async fn get_actor(uri: &Uri, current_profile: &CurrentProfile) -> Result<Ac
     Ok(get_from_ap(uri, current_profile).await?)
 }
 
-pub async fn get_outbox(uri: &Uri, current_profile: &CurrentProfile) -> Result<Outbox, ServerError> {
+pub async fn get_outbox(
+    uri: &Uri,
+    current_profile: &CurrentProfile,
+) -> Result<Outbox, ServerError> {
     Ok(get_from_ap(uri, current_profile).await?)
 }
 
-pub async fn get_outbox_page(uri: &Uri, current_profile: &CurrentProfile) -> Result<OrderedCollectionPage, ServerError> {
+pub async fn get_outbox_page(
+    uri: &Uri,
+    current_profile: &CurrentProfile,
+) -> Result<OrderedCollectionPage, ServerError> {
     Ok(get_from_ap(uri, current_profile).await?)
 }
-
 
 pub async fn get_webfinger(host: &str, account_name: &str) -> Result<WebFinger, ServerError> {
     let uri = format!("https://{}/.well-known/webfinger", host);

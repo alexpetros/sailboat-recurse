@@ -1,32 +1,32 @@
-mod serve_static;
+mod debug;
+mod feeds;
+mod follow;
+mod following;
 mod healthcheck;
-mod well_known;
 mod index;
 mod posts;
 mod profiles;
-mod debug;
 mod search;
-mod follow;
-mod following;
+mod serve_static;
 mod switch;
-mod feeds;
+mod well_known;
 
-use hyper::header::HOST;
-use crate::server::error::ServerError;
 use crate::router::well_known::webfinger;
+use crate::server::error::ServerError;
 use crate::server::server_response::ServerResponse;
 use crate::sqlite::get_conn;
-use std::sync::Arc;
-use hyper::{Method, Request};
-use hyper::body::Incoming;
-use tracing::debug;
-use tracing::warn;
-use tracing::error;
 use feeds::_feed_handle;
+use hyper::body::Incoming;
+use hyper::header::HOST;
+use hyper::{Method, Request};
 use profiles::_profile_id;
+use std::sync::Arc;
+use tracing::debug;
+use tracing::error;
+use tracing::warn;
 
-use crate::server::server_request::ServerRequest;
 use crate::server::context::GlobalContext;
+use crate::server::server_request::ServerRequest;
 use crate::server::server_response;
 
 pub const GET: &Method = &Method::GET;
@@ -37,12 +37,19 @@ const DEFAULT_DB: &str = "./sailboat.db";
 
 pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> ServerResponse {
     let path = req.uri().path();
-    let host = req.headers().get(HOST)
+    let host = req
+        .headers()
+        .get(HOST)
         .map(|h| h.to_str().unwrap_or("UNKNOWN"))
         .unwrap_or("UNKNOWN");
 
     if path != "/debug" {
-        debug!("Received {} request at {} from host {}", &req.method(), path, host);
+        debug!(
+            "Received {} request at {} from host {}",
+            &req.method(),
+            path,
+            host
+        );
     }
 
     let db_path = std::env::var("DB_PATH").unwrap_or(DEFAULT_DB.to_owned());
@@ -51,7 +58,11 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
     let domain = if g_ctx.domain.is_some() {
         g_ctx.domain.clone().unwrap()
     } else {
-        db.query_row("SELECT value FROM globals WHERE key = 'domain'", (), |row| { row.get(0) })?
+        db.query_row(
+            "SELECT value FROM globals WHERE key = 'domain'",
+            (),
+            |row| row.get(0),
+        )?
     };
 
     let req = ServerRequest::new(req, &g_ctx, db, domain)?;
@@ -64,7 +75,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
     // Remove the query parameter for routing purposes
     let without_query = match req.uri().path().split_once("?") {
         None => req.uri().path(),
-        Some(x) => x.0
+        Some(x) => x.0,
     };
 
     // Split into sub-routes
@@ -82,7 +93,6 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
         (GET, ["profiles", "new"]) => profiles::new::get(req),
         (GET, ["profiles", _]) => _profile_id::get(req).await,
         // (GET, ["profiles", _, "outbox"]) => outbox::get(req),
-
         (GET, ["switch", _]) => switch::get(req),
 
         (GET, ["search", ..]) => search::get(req),
@@ -95,7 +105,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
 
         (GET, ["debug"]) => debug::get(req),
         (GET, ["healthcheck"]) => healthcheck::get(req),
-        _ => server_response::not_found(req)
+        _ => server_response::not_found(req),
     }
 }
 
@@ -116,7 +126,7 @@ pub async fn serve(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Ser
         match err.status_code.as_u16() {
             400..=499 => log_warn_and_send_specific_message(err),
             500..=599 => log_error_and_send_generic_message(err),
-            _ => log_error_and_send_generic_message(err)
+            _ => log_error_and_send_generic_message(err),
         }
     } else {
         result

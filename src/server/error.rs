@@ -8,7 +8,7 @@ use hyper::StatusCode;
 pub struct ServerError {
     pub prefix: &'static str,
     pub message: String,
-    pub status_code: StatusCode
+    pub status_code: StatusCode,
 }
 
 impl Error for ServerError {}
@@ -24,7 +24,7 @@ impl From<InvalidHeaderValue> for ServerError {
         ServerError {
             prefix: "[HYPER ERROR]",
             message: err.to_string(),
-            status_code: StatusCode::INTERNAL_SERVER_ERROR
+            status_code: StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
@@ -34,7 +34,7 @@ impl From<rusqlite::Error> for ServerError {
         ServerError {
             prefix: "[SQL ERROR]",
             message: err.to_string(),
-            status_code: StatusCode::INTERNAL_SERVER_ERROR
+            status_code: StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
@@ -44,7 +44,7 @@ impl From<hyper::Error> for ServerError {
         ServerError {
             prefix: "[HYPER ERROR]",
             message: err.to_string(),
-            status_code: StatusCode::INTERNAL_SERVER_ERROR
+            status_code: StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
@@ -54,7 +54,7 @@ impl From<ErrorStack> for ServerError {
         ServerError {
             prefix: "[OpenSSL ERROR]",
             message: err.to_string(),
-            status_code: StatusCode::BAD_REQUEST
+            status_code: StatusCode::BAD_REQUEST,
         }
     }
 }
@@ -63,7 +63,7 @@ pub fn map_bad_request(e: impl Error) -> ServerError {
     ServerError {
         prefix: "[BAD REQUEST]",
         message: format!("{:?}", e),
-        status_code: StatusCode::BAD_REQUEST
+        status_code: StatusCode::BAD_REQUEST,
     }
 }
 
@@ -71,7 +71,7 @@ pub fn map_bad_gateway(e: impl Error) -> ServerError {
     ServerError {
         prefix: "[BAD GATEWAY]",
         message: format!("{:?}", e),
-        status_code: StatusCode::BAD_GATEWAY
+        status_code: StatusCode::BAD_GATEWAY,
     }
 }
 
@@ -79,7 +79,7 @@ pub fn not_found() -> ServerError {
     ServerError {
         prefix: "",
         message: "".to_string(),
-        status_code: StatusCode::NOT_FOUND
+        status_code: StatusCode::NOT_FOUND,
     }
 }
 
@@ -87,7 +87,7 @@ pub fn bad_request(message: &str) -> ServerError {
     ServerError {
         prefix: "[BAD REQUEST]",
         message: message.to_owned(),
-        status_code: StatusCode::BAD_REQUEST
+        status_code: StatusCode::BAD_REQUEST,
     }
 }
 
@@ -95,7 +95,7 @@ pub fn body_too_large() -> ServerError {
     ServerError {
         prefix: "",
         message: "Body was too large".to_string(),
-        status_code: StatusCode::BAD_REQUEST
+        status_code: StatusCode::BAD_REQUEST,
     }
 }
 
@@ -103,7 +103,7 @@ pub fn body_not_utf8() -> ServerError {
     ServerError {
         prefix: "",
         message: "Body was not UTF8".to_string(),
-        status_code: StatusCode::BAD_REQUEST
+        status_code: StatusCode::BAD_REQUEST,
     }
 }
 
@@ -111,6 +111,6 @@ pub fn bad_gateway(message: &str) -> ServerError {
     ServerError {
         prefix: "[BAD REQUEST]",
         message: message.to_owned(),
-        status_code: StatusCode::BAD_REQUEST
+        status_code: StatusCode::BAD_REQUEST,
     }
 }

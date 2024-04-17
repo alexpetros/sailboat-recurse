@@ -1,17 +1,17 @@
-use super::{AtContext};
+use super::AtContext;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum OrderedCollectionType {
-    OrderedCollection
+    OrderedCollection,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum PageOrLink {
     Link(String),
-    Page(OrderedCollectionPage)
+    Page(OrderedCollectionPage),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -21,7 +21,7 @@ pub struct OrderedCollectionPage {
     pub next: Option<Box<PageOrLink>>,
     pub prev: Option<Box<PageOrLink>>,
     #[serde(rename = "orderedItems")]
-    pub ordered_items: Vec<Activity>
+    pub ordered_items: Vec<Activity>,
 }
 // https://www.w3.org/TR/activitystreams-core/#collection
 #[derive(Debug, Serialize, Deserialize)]
@@ -37,7 +37,7 @@ pub struct Outbox {
     pub first: PageOrLink,
     pub last: PageOrLink,
     pub current: Option<PageOrLink>, // This is theoretically mandatory
-    pub items: Option<Vec<Value>>
+    pub items: Option<Vec<Value>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -58,7 +58,7 @@ pub struct Activity {
     pub published: Option<String>,
     pub to: Option<Vec<String>>,
     pub cc: Option<Vec<String>>,
-    pub object: Object
+    pub object: Object,
 }
 
 // https://www.w3.org/TR/activitystreams-vocabulary/#object-types
@@ -71,7 +71,9 @@ pub enum Object {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum NoteType { Note }
+pub enum NoteType {
+    Note,
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Note {
@@ -81,5 +83,5 @@ pub struct Note {
     pub summary: Option<String>,
     pub published: Option<String>,
     pub url: String,
-    pub content: String
+    pub content: String,
 }

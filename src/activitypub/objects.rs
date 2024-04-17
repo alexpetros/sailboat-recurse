@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 pub mod actor;
-pub mod webfinger;
 pub mod outbox;
+pub mod webfinger;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Context {
@@ -18,5 +18,5 @@ pub enum Context {
 #[serde(untagged)]
 pub enum AtContext {
     Context(Context),
-    Collection(Vec<Context>)
+    Collection(Vec<Context>),
 }

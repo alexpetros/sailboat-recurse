@@ -21,7 +21,10 @@ fn iso_to_local(iso_time: String) -> Result<String, Error> {
             Ok(local_time)
         }
         Err(_) => {
-            warn!("Invalid time {}; time should be in ISO 8601 format", &iso_time);
+            warn!(
+                "Invalid time {}; time should be in ISO 8601 format",
+                &iso_time
+            );
             Ok(iso_time)
         }
     }

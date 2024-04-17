@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::server_request::IncomingRequest;
-use crate::server::server_response::{ServerResponse, send};
+use crate::server::server_response::{send, ServerResponse};
 
 #[derive(Serialize, Deserialize)]
 struct Actor {
@@ -19,7 +19,13 @@ pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
     req.db.execute(
         "INSERT INTO followed_actors (url, name, preferred_username, summary, host)
         VALUES (?1, ?2, ?3, ?4, ?5)",
-        (&form.url, &form.name, &form.preferred_username, &form.summary, &form.host)
+        (
+            &form.url,
+            &form.name,
+            &form.preferred_username,
+            &form.summary,
+            &form.host,
+        ),
     )?;
 
     let res = "<button disabled>Followed!</button>".to_string();

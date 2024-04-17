@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::activitypub::objects::actor::LinkType;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WebFingerLink {
@@ -16,5 +16,5 @@ pub struct WebFinger {
     pub subject: Option<String>,
     pub aliases: Option<Vec<String>>,
     pub properties: Option<serde_json::Value>,
-    pub links: Option<Vec<WebFingerLink>>
+    pub links: Option<Vec<WebFingerLink>>,
 }

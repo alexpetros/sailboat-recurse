@@ -1,16 +1,16 @@
-use minijinja::context;
-use hyper::StatusCode;
-use hyper::header::{ACCEPT, CONTENT_TYPE, HeaderValue};
-use tracing::log::debug;
-use serde_json::json;
 use crate::activitypub::objects::actor::{Actor, ActorType, PublicKey};
 use crate::activitypub::objects::Context;
 use crate::queries::get_posts_in_profile;
-use crate::router::profiles::{LONG_ACCEPT_HEADER, Profile, SHORT_ACCEPT_HEADER};
+use crate::router::profiles::{Profile, LONG_ACCEPT_HEADER, SHORT_ACCEPT_HEADER};
+use crate::server::error::bad_request;
 use crate::server::server_request::IncomingRequest;
 use crate::server::server_response;
-use crate::server::error::bad_request;
 use crate::server::server_response::{send, send_status, ServerResponse};
+use hyper::header::{HeaderValue, ACCEPT, CONTENT_TYPE};
+use hyper::StatusCode;
+use minijinja::context;
+use serde_json::json;
+use tracing::log::debug;
 
 pub mod outbox;
 
@@ -19,26 +19,31 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
 
     let profile_id = match profile_param.split_once("#") {
         None => profile_param,
-        Some((f, _)) => f
-    }.parse::<i64>().map_err(|_| { bad_request("Invalid profile ID") })?;
+        Some((f, _)) => f,
+    }
+    .parse::<i64>()
+    .map_err(|_| bad_request("Invalid profile ID"))?;
 
-    let profile = req.db.query_row("
+    let profile = req.db.query_row(
+        "
         SELECT profile_id, preferred_username, display_name, internal_name, private_key_pem
-        FROM profiles where profile_id = ?1"
-        , [ profile_id ], |row| {
+        FROM profiles where profile_id = ?1",
+        [profile_id],
+        |row| {
             let profile = Profile {
                 profile_id: row.get(0)?,
                 preferred_username: row.get(1)?,
                 display_name: row.get(2)?,
                 internal_name: row.get(3)?,
-                private_key_pem: row.get(4)?
+                private_key_pem: row.get(4)?,
             };
             Ok(profile)
-        });
+        },
+    );
 
     let profile = match profile {
         Ok(x) => x,
-        Err(_) => return send_status(StatusCode::NOT_FOUND)
+        Err(_) => return send_status(StatusCode::NOT_FOUND),
     };
 
     // If no request header was provided, serve the HTML profile
@@ -92,7 +97,7 @@ fn serve_json_profile(req: IncomingRequest<'_>, profile: Profile) -> ServerRespo
         icon: None,
         inbox: Some(inbox),
         outbox: Some(outbox),
-        public_key
+        public_key,
     };
 
     let body = json!(actor).to_string();

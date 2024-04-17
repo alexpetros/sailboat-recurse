@@ -1,28 +1,28 @@
+use crate::config::Config;
+use crate::server::context::GlobalContext;
+use hyper::body;
+use sqlite::initliaze_db;
+use std::env;
+use std::net::SocketAddr;
+use std::sync::Arc;
 use templates::load_env;
 use tokio::signal;
-use sqlite::initliaze_db;
 use tokio_util::task::TaskTracker;
-use crate::server::context::GlobalContext;
-use std::env;
-use std::sync::Arc;
-use std::net::SocketAddr;
-use hyper::body;
-use crate::config::Config;
 
-use std::path::Path;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper_util::rt::TokioIo;
+use std::path::Path;
 use tokio::net::TcpListener;
 use tracing::{error, info, level_filters::LevelFilter};
 
+mod activitypub;
 mod config;
+mod queries;
 mod router;
 mod server;
-mod static_files;
 mod sqlite;
-mod queries;
-mod activitypub;
+mod static_files;
 mod templates;
 
 const DEFAULT_DB: &str = "./sailboat.db";
@@ -60,7 +60,10 @@ async fn main() {
         if g_ctx.domain.is_none() {
             println!("Dev mode running but no global callback domain is specified. Remote servers will not be able to call back.");
         }
-        println!("Running with callback domain: {}", g_ctx.domain.clone().unwrap());
+        println!(
+            "Running with callback domain: {}",
+            g_ctx.domain.clone().unwrap()
+        );
     }
 
     let g_ctx = Arc::new(g_ctx);
@@ -76,17 +79,25 @@ async fn main() {
             std::process::exit(0);
             // tracker.close();
             // tracker.wait().await;
-        },
-        Err(err) => { eprintln!("Unable to listen for shutdown signal: {}", err); },
+        }
+        Err(err) => {
+            eprintln!("Unable to listen for shutdown signal: {}", err);
+        }
     }
-
 }
 
 // Doing this because MacOS shows me an annoying notification for the latter
-const HOST: &str = if cfg!(debug_assertions) { "127.0.0.1" } else { "0.0.0.0" };
+const HOST: &str = if cfg!(debug_assertions) {
+    "127.0.0.1"
+} else {
+    "0.0.0.0"
+};
 
-async fn run_server(port: u16, tracker: Arc<TaskTracker>, g_ctx: Arc<GlobalContext<'static>>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-
+async fn run_server(
+    port: u16,
+    tracker: Arc<TaskTracker>,
+    g_ctx: Arc<GlobalContext<'static>>,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Setup logging (leaving at DEBUG level for now)
     tracing_subscriber::fmt()
         .with_max_level(LevelFilter::DEBUG)

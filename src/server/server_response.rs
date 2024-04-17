@@ -1,8 +1,8 @@
-use http_body_util::{BodyExt, Empty, Full};
 use http_body_util::combinators::BoxBody;
-use hyper::{Response, StatusCode};
+use http_body_util::{BodyExt, Empty, Full};
 use hyper::body::Bytes;
 use hyper::header::{HeaderValue, LOCATION};
+use hyper::{Response, StatusCode};
 use minijinja::context;
 
 use crate::server::error::ServerError;
@@ -11,11 +11,15 @@ use crate::server::server_request::IncomingRequest;
 pub type ServerResponse = Result<Response<BoxBody<Bytes, hyper::Error>>, ServerError>;
 
 pub fn empty() -> BoxBody<Bytes, hyper::Error> {
-    Empty::<Bytes>::new().map_err(|never| match never {}).boxed()
+    Empty::<Bytes>::new()
+        .map_err(|never| match never {})
+        .boxed()
 }
 
 fn full<T: Into<Bytes>>(chunk: T) -> BoxBody<Bytes, hyper::Error> {
-    Full::new(chunk.into()).map_err(|never| match never {}).boxed()
+    Full::new(chunk.into())
+        .map_err(|never| match never {})
+        .boxed()
 }
 
 pub fn send<T: Into<Bytes>>(body: T) -> Response<BoxBody<hyper::body::Bytes, hyper::Error>> {
@@ -24,12 +28,10 @@ pub fn send<T: Into<Bytes>>(body: T) -> Response<BoxBody<hyper::body::Bytes, hyp
 
 pub fn redirect(path: &str) -> ServerResponse {
     let mut res = Response::new(empty());
-    let location_val =  HeaderValue::from_str(path).map_err(|_| {
-        ServerError {
-            prefix: "[HEADER ERROR]",
-            message: "Invalid Redirect Provided".to_owned(),
-            status_code: StatusCode:: INTERNAL_SERVER_ERROR
-        }
+    let location_val = HeaderValue::from_str(path).map_err(|_| ServerError {
+        prefix: "[HEADER ERROR]",
+        message: "Invalid Redirect Provided".to_owned(),
+        status_code: StatusCode::INTERNAL_SERVER_ERROR,
     })?;
     *res.status_mut() = StatusCode::SEE_OTHER;
     res.headers_mut().insert(LOCATION, location_val);

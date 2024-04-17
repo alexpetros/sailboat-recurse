@@ -1,31 +1,29 @@
 const PORT_DEFAULT: u16 = 3000;
 
 pub struct Config {
-    pub port: u16
+    pub port: u16,
 }
 
 impl Config {
     pub fn new(mut args: Vec<String>) -> Config {
-
         let port_string = find_flag_with_value(&mut args, "--port");
         let port = match port_string {
             None => PORT_DEFAULT,
-            Some(port_string) => {
-                port_string.parse()
-                    .unwrap_or_else(|_| panic!("Invalid value for port: {}", port_string))
-            }
+            Some(port_string) => port_string
+                .parse()
+                .unwrap_or_else(|_| panic!("Invalid value for port: {}", port_string)),
         };
         Config { port }
     }
 }
 
 fn find_flag_with_value(args: &mut Vec<String>, flag: &'static str) -> Option<String> {
-    args.iter()
-        .position(|x| x == flag)
-        .map(|index| {
-            if index + 1 == args.len() { panic!("Missing value for {}", flag); }
-            args.drain(index..index+2).nth(1).unwrap()
-        })
+    args.iter().position(|x| x == flag).map(|index| {
+        if index + 1 == args.len() {
+            panic!("Missing value for {}", flag);
+        }
+        args.drain(index..index + 2).nth(1).unwrap()
+    })
 }
 
 #[cfg(test)]
@@ -63,5 +61,4 @@ mod tests {
         let args = str_vec!["sailboat", "--port", "--other"];
         Config::new(args);
     }
-
 }

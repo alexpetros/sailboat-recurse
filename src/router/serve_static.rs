@@ -12,6 +12,6 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
     let contents = req.global.statics.get(file);
     match contents {
         Some(body) => Ok(server_response::send(body.clone())),
-        None => server_response::not_found(req)
+        None => server_response::not_found(req),
     }
 }
