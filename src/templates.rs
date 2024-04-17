@@ -1,23 +1,28 @@
+use std::str::FromStr;
+
 use chrono::{DateTime, Local};
-use minijinja::{Environment, Error, ErrorKind};
+use minijinja::{Environment, Error};
+use tracing::warn;
 
 pub mod _partials;
 
 pub fn load_env() -> Environment<'static> {
     let mut env = Environment::new();
     minijinja_embed::load_templates!(&mut env);
-    env.add_function("unix_time_to_local", unix_time_to_local);
+    env.add_function("iso_to_local", iso_to_local);
     env
 }
 
-// TODO: User-local timestamp handling
-fn unix_time_to_local(unix_time: String) -> Result<String, Error> {
-    let unix_time = unix_time.parse::<i64>().map_err(|e| {
-        Error::new(ErrorKind::InvalidOperation, e.to_string())
-    })?;
-    let time = DateTime::from_timestamp(unix_time, 0)
-        .ok_or(Error::new(ErrorKind::InvalidOperation, "Invalid timestamp provided"))?
-        .with_timezone(&Local);
-    let local_time = time.format("%b %m %Y, %r").to_string();
-    Ok(local_time)
+fn iso_to_local(iso_time: String) -> Result<String, Error> {
+    let time = DateTime::<Local>::from_str(&iso_time);
+    match time {
+        Ok(t) => {
+            let local_time = t.format("%b %m %Y, %r").to_string();
+            Ok(local_time)
+        }
+        Err(_) => {
+            warn!("Invalid time {}; time should be in ISO 8601 format", &iso_time);
+            Ok(iso_time)
+        }
+    }
 }

@@ -16,6 +16,6 @@
       </button>
     </div>
     <p>{{ post.content | safe }}</p>
-    <footer>{{ unix_time_to_local(post.created_at) }}</footer>
+    <footer>{{ iso_to_local(post.created_at) }}</footer>
   </div>
 </article>
