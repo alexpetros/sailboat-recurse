@@ -2,14 +2,14 @@ CREATE TABLE posts (
   post_id INTEGER PRIMARY KEY,
   profile_id INTEGER NOT NULL REFERENCES profiles ON DELETE CASCADE ON UPDATE CASCADE,
   content TEXT,
-  created_at INTEGER NOT NULL DEFAULT (unixepoch())
+  created_at TEXT NOT NULL DEFAULT (strftime('%FT%TZ', CURRENT_TIMESTAMP))
 ) STRICT;
 
 CREATE TABLE profiles (
   profile_id INTEGER PRIMARY KEY,
-  internal_name TEXT NOT NULL,
   display_name TEXT NOT NULL,
   preferred_username TEXT NOT NULL,
+  nickname TEXT,
   private_key_pem TEXT NOT NULL
 ) STRICT;
 
