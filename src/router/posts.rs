@@ -2,7 +2,7 @@ use crate::server::error;
 use crate::server::error::body_not_utf8;
 use minijinja::context;
 use tracing::log::debug;
-use serde::{Deserialize};
+use serde::Deserialize;
 use crate::server::server_request::IncomingRequest;
 use crate::server::server_response::{ServerResponse, send};
 use crate::templates::_partials::post::Post;

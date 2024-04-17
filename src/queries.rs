@@ -1,5 +1,4 @@
 use rusqlite::Connection;
-use chrono::{DateTime, Local};
 use hyper::Uri;
 use tracing::warn;
 use crate::activitypub::FullHandle;
@@ -22,17 +21,12 @@ pub fn get_posts_in_profile (db: &Connection, profile_id: i64) -> Result<Vec<Pos
          ORDER BY created_at DESC
          ")?;
     let rows = query.query_map([profile_id], |row| {
-        // TODO: User-local timestamp handling
-        let created_at = DateTime::from_timestamp(row.get(4)?, 0)
-            .unwrap()
-            .with_timezone(&Local);
-        let created_at = created_at.format("%b %m %Y, %r").to_string();
         let post = Post {
             post_id: row.get(0)?,
             actor_name: row.get(1)?,
             actor_handle: row.get(2)?,
             content: row.get(3)?,
-            created_at
+            created_at: row.get(4)?
         };
         Ok(post)
     })?;

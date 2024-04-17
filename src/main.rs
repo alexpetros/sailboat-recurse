@@ -1,3 +1,4 @@
+use templates::load_env;
 use tokio::signal;
 use sqlite::initliaze_db;
 use tokio_util::task::TaskTracker;
@@ -14,7 +15,6 @@ use hyper::service::service_fn;
 use hyper_util::rt::TokioIo;
 use tokio::net::TcpListener;
 use tracing::{error, info, level_filters::LevelFilter};
-use minijinja::Environment;
 
 mod config;
 mod router;
@@ -46,9 +46,7 @@ async fn main() {
     }
 
     // Setup template environment
-    let mut env = Environment::new();
-    minijinja_embed::load_templates!(&mut env);
-    let env = Arc::new(env);
+    let env = Arc::new(load_env());
 
     // Load static files
     let statics = static_files::load_static();

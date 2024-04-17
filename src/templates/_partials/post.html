@@ -16,6 +16,6 @@
       </button>
     </div>
     <p>{{ post.content | safe }}</p>
-    <footer>{{ post.created_at }}</footer>
+    <footer>{{ unix_time_to_local(post.created_at) }}</footer>
   </div>
 </article>
