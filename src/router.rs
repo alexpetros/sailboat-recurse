@@ -35,6 +35,7 @@ pub const DELETE: &Method = &Method::DELETE;
 
 const DEFAULT_DB: &str = "./sailboat.db";
 
+#[rustfmt::skip]
 pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> ServerResponse {
     let path = req.uri().path();
     let host = req
@@ -44,12 +45,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
         .unwrap_or("UNKNOWN");
 
     if path != "/debug" {
-        debug!(
-            "Received {} request at {} from host {}",
-            &req.method(),
-            path,
-            host
-        );
+        debug!("Received {} request at {} from host {}", &req.method(), path, host);
     }
 
     let db_path = std::env::var("DB_PATH").unwrap_or(DEFAULT_DB.to_owned());
@@ -58,11 +54,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
     let domain = if g_ctx.domain.is_some() {
         g_ctx.domain.clone().unwrap()
     } else {
-        db.query_row(
-            "SELECT value FROM globals WHERE key = 'domain'",
-            (),
-            |row| row.get(0),
-        )?
+        db.query_row("SELECT value FROM globals WHERE key = 'domain'", (), |row| row.get(0))?
     };
 
     let req = ServerRequest::new(req, &g_ctx, db, domain)?;
@@ -82,30 +74,30 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
     let sub_routes: Vec<&str> = without_query.split("/").collect();
 
     match (req.method(), &sub_routes[1..]) {
-        (GET, [""]) => index::get(req).await,
+        (GET, [""])                         => index::get(req).await,
 
-        (GET, ["feeds", _]) => _feed_handle::get(req).await,
+        (GET, ["feeds", _])                 => _feed_handle::get(req).await,
 
-        (POST, ["follow"]) => follow::post(req).await,
-        (GET, ["following"]) => following::get(req).await,
+        (POST, ["follow"])                  => follow::post(req).await,
+        (GET, ["following"])                => following::get(req).await,
 
-        (POST, ["profiles"]) => profiles::post(req).await,
-        (GET, ["profiles", "new"]) => profiles::new::get(req),
-        (GET, ["profiles", _]) => _profile_id::get(req).await,
+        (POST, ["profiles"])                => profiles::post(req).await,
+        (GET, ["profiles", "new"])          => profiles::new::get(req),
+        (GET, ["profiles", _])              => _profile_id::get(req).await,
         // (GET, ["profiles", _, "outbox"]) => outbox::get(req),
-        (GET, ["switch", _]) => switch::get(req),
+        (GET, ["switch", _])                => switch::get(req),
 
-        (GET, ["search", ..]) => search::get(req),
-        (POST, ["search", ..]) => search::post(req).await,
+        (GET, ["search", ..])               => search::get(req),
+        (POST, ["search", ..])              => search::post(req).await,
 
-        (POST, ["posts"]) => posts::post(req).await,
-        (DELETE, ["posts", ..]) => posts::delete(req),
+        (POST, ["posts"])                   => posts::post(req).await,
+        (DELETE, ["posts", ..])             => posts::delete(req),
 
         (GET, [".well-known", "webfinger"]) => webfinger::get(req).await,
 
-        (GET, ["debug"]) => debug::get(req),
-        (GET, ["healthcheck"]) => healthcheck::get(req),
-        _ => server_response::not_found(req),
+        (GET, ["debug"])                    => debug::get(req),
+        (GET, ["healthcheck"])              => healthcheck::get(req),
+        _                                   => server_response::not_found(req),
     }
 }
 
