@@ -10,7 +10,7 @@ use openssl::pkey::{PKey, Private};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use tracing::log::warn;
 
@@ -22,15 +22,15 @@ const ENV: &str = if cfg!(debug_assertions) {
     "prod"
 };
 // TODO this wouldn't work if you deleted for your first profile
-const DEFAULT_PROFILE: i64 = 1;
+// const DEFAULT_PROFILE: i64 = 1;
 
 pub enum SR<'a, T> {
     Authed(AuthenticatedRequest<'a, T>),
-    Unauthed(UnauthenticatedRequest<'a, T>)
+    Unauthed(ServerRequest<'a, T>)
 }
 
 pub type AuthedRequest<'a> = AuthenticatedRequest<'a, Incoming>;
-pub type UnauthedRequest<'a> = UnauthenticatedRequest<'a, Incoming>;
+pub type UnauthedRequest<'a> = ServerRequest<'a, Incoming>;
 
 // TODO https://users.rust-lang.org/t/how-to-dispatch-enum-function-to-all-variants/80152/3
 impl<'a, T> SR<'a, T>{
@@ -46,9 +46,9 @@ impl<'a, T> SR<'a, T>{
             SR::Unauthed(x) => x.method()
         }
     }
-    pub fn statics(&self) -> &Arc<HashMap<std::string::String, Vec<u8>>> {
+    pub fn statics(&self) -> &Arc<HashMap<String, Vec<u8>>> {
         match self {
-            SR::Authed(x) => &x.global.statics,
+            SR::Authed(x) => &x.request.global.statics,
             SR::Unauthed(x) => &x.global.statics,
         }
     }
@@ -81,199 +81,45 @@ pub fn get_current_profile(db: &Connection, cookies: &HashMap<String, String>, d
     Some(current_profile)
 }
 
-pub fn get_request<'a, T>(
-        request: hyper::Request<T>,
-        g_ctx: &Arc<GlobalContext<'a>>,
-        db: Connection,
-        domain: String,
-        ) -> Result<SR<'a, T>, ServerError> {
-    let cookie_string = request
-        .headers()
-        .get(COOKIE)
-        .map(|value| value.to_str().ok())
-        .flatten();
+pub fn get_request<'a, T>( request: hyper::Request<T>, g_ctx: &Arc<GlobalContext<'a>>, db: Connection, domain: String,) -> Result<SR<'a, T>, ServerError> {
 
-    let cookies = cookie_string
-        .map(|s| s.split("; ").collect::<Vec<&str>>())
-        .unwrap_or(Vec::<&str>::new())
-        .iter()
-        .filter_map(|s| s.split_once("="))
-        .map(|(key, value)| (key.to_owned(), value.to_owned()))
-        .collect::<HashMap<String, String>>();
-    let current_profile = get_current_profile(&db, &cookies, domain.clone());
+    let server_request = ServerRequest::new(request, g_ctx.clone(), db)?;
+
+    let current_profile = get_current_profile(&server_request.db, &server_request.cookies, domain.clone());
+
     if let Some(profile) = current_profile {
-        let req = AuthenticatedRequest::new(request, g_ctx, db, domain, cookies, profile)?;
+        let req = AuthenticatedRequest::new(server_request, profile)?;
         Ok(SR::Authed(req))
     } else {
-        let req = UnauthenticatedRequest::new(request, g_ctx, db, domain)?;
-        Ok(SR::Unauthed(req))
+        Ok(SR::Unauthed(server_request))
     }
 }
-
-
-pub struct UnauthenticatedRequest<'a, T> {
-    pub request: hyper::Request<T>,
-    pub global: Arc<GlobalContext<'a>>,
-    pub db: Connection,
-}
-
-impl <'a, T> UnauthenticatedRequest<'a, T> {
-    pub fn new(
-        request: hyper::Request<T>,
-        g_ctx: &Arc<GlobalContext<'a>>,
-        db: Connection,
-        domain: String,
-    ) -> Result<Self, ServerError> {
-        Ok(Self { request, global: g_ctx.clone(), db, })
-    }
-    pub fn get_trailing_param(&self, message: &str) -> Result<&str, ServerError> {
-        self.uri()
-            .path()
-            .split("/")
-            .last()
-            .ok_or(error::bad_request(message))
-    }
-
-    pub fn render(&self, path: &str, local_values: Value) -> Result<Vec<u8>, ServerError> {
-        let tmpl = self.global.env.get_template(path).unwrap();
-        tmpl.render(())
-            .map(|x| x.into_bytes())
-            .map_err(|e| map_bad_gateway(e))
-    }
-}
-
-impl<'a, T> Deref for UnauthenticatedRequest<'a, T> {
-    type Target = hyper::Request<T>;
-    fn deref(&self) -> &Self::Target {
-        &self.request
-    }
-}
-
-impl<'a> UnauthenticatedRequest<'a, Incoming> {
-    pub async fn get_body(self) -> Result<UnauthenticatedRequest<'a, Bytes>, ServerError> {
-        let (parts, body) = self.request.into_parts();
-        let body_bytes = http_body_util::Limited::new(body, 1024 * 64);
-
-        let bytes = body_bytes
-            .collect()
-            .await
-            .map(|r| r.to_bytes())
-            .map_err(|_| body_too_large())?;
-
-        let request = hyper::Request::from_parts(parts, bytes);
-        let global = self.global;
-        let db = self.db;
-
-        Ok(UnauthenticatedRequest { request, global, db, })
-    }
-
-    pub async fn to_text(self) -> Result<UnauthenticatedRequest<'a, String>, ServerError> {
-        self.get_body().await?.to_text()
-    }
-}
-
-// Not sure that I even need this intermediate state at all right now
-// But I think it will become relevant for uploading images
-impl<'a> UnauthenticatedRequest<'a, Bytes> {
-    pub fn to_text(self) -> Result<UnauthenticatedRequest<'a, String>, ServerError> {
-        let (parts, body) = self.request.into_parts();
-        let str = String::from_utf8(body.to_vec()).map_err(|_| body_not_utf8())?;
-        let request = hyper::Request::from_parts(parts, str);
-
-        let global = self.global;
-        let db = self.db;
-        Ok(UnauthenticatedRequest { request, global, db, })
-    }
-}
-
-impl<'a> UnauthenticatedRequest<'a, String> {
-    pub fn get_form_data<T>(&'a self) -> Result<T, ServerError>
-    where
-        T: Deserialize<'a>,
-    {
-        let str = self.body();
-        serde_html_form::from_str::<T>(str).map_err(|e| {
-            warn!("failed to deserialize request {}", &self.body());
-            map_bad_request(e)
-        })
-    }
-}
-
-#[derive(Serialize)]
-struct Profile {
-    profile_id: i64,
-    nickname: String,
-}
-
-pub struct CurrentProfile {
-    pub profile_id: i64,
-    pub domain: String,
-    pub pkey: PKey<Private>,
-}
-
-#[derive(Serialize)]
-struct Locals {
-    profiles: Vec<Profile>,
-}
-
 pub struct AuthenticatedRequest<'a, T> {
-    pub request: hyper::Request<T>,
-    pub global: Arc<GlobalContext<'a>>,
-    pub current_profile: CurrentProfile,
-    pub db: Connection,
-    pub cookies: HashMap<String, String>,
-    locals: Locals,
-}
-
-impl<'a, T> AuthenticatedRequest<'a, T> {
-    fn make_context(&self, local_values: Value) -> Value {
-        let global_values = context! { env => ENV };
-        let request_values = context! { profiles => self.locals.profiles };
-        context! { ..local_values, ..request_values, ..global_values }
-    }
-
-    pub fn get_trailing_param(&self, message: &str) -> Result<&str, ServerError> {
-        self.uri()
-            .path()
-            .split("/")
-            .last()
-            .ok_or(error::bad_request(message))
-    }
-
-    pub fn render(&self, path: &str, local_values: Value) -> Result<Vec<u8>, ServerError> {
-        let tmpl = self.global.env.get_template(path).unwrap();
-        let context = self.make_context(local_values);
-        tmpl.render(context)
-            .map(|x| x.into_bytes())
-            .map_err(|e| map_bad_gateway(e))
-    }
-
-    // pub fn render_block(&self, path: &str, block_name: &str, local_values: Value) -> Vec<u8> {
-    //     let tmpl = self.global.env.get_template(path).unwrap();
-    //     let context = self.make_context(local_values);
-    //     tmpl.eval_to_state(context).unwrap().render_block(block_name).unwrap().into_bytes()
-    // }
-
+    pub request: ServerRequest<'a, T>,
+    pub locals: Locals,
+    pub current_profile: CurrentProfile
 }
 
 impl<'a, T> Deref for AuthenticatedRequest<'a, T> {
-    type Target = hyper::Request<T>;
+    type Target = ServerRequest<'a, T>;
     fn deref(&self) -> &Self::Target {
         &self.request
     }
 }
 
+impl<'a, T> DerefMut for AuthenticatedRequest<'a, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.request
+    }
+}
+
 impl<'a, T> AuthenticatedRequest<'a, T> {
     pub fn new(
-        request: hyper::Request<T>,
-        g_ctx: &Arc<GlobalContext<'a>>,
-        db: Connection,
-        domain: String,
-        cookies: HashMap<String, String>,
+        request: ServerRequest<'a, T>,
         current_profile: CurrentProfile,
     ) -> Result<Self, ServerError> {
         let profiles = {
-            let mut query = db.prepare("SELECT profile_id, nickname FROM profiles")?;
+            let mut query = request.db.prepare("SELECT profile_id, nickname FROM profiles")?;
             let rows = query.query_map((), |row| {
                 let profiles = Profile {
                     profile_id: row.get(0)?,
@@ -291,20 +137,121 @@ impl<'a, T> AuthenticatedRequest<'a, T> {
         };
 
         let locals = Locals { profiles };
+        Ok(Self { request, locals, current_profile, })
+    }
 
-        Ok(Self {
-            request,
-            global: g_ctx.clone(),
-            db,
-            locals,
-            cookies,
-            current_profile,
-        })
+    fn make_context(&self, local_values: Value) -> Value {
+        let global_values = context! { env => ENV };
+        let request_values = context! { profiles => self.locals.profiles };
+        context! { ..local_values, ..request_values, ..global_values }
+    }
+
+    pub fn render(&self, path: &str, local_values: Value) -> Result<Vec<u8>, ServerError> {
+        let tmpl = self.request.global.env.get_template(path).unwrap();
+        let context = self.make_context(local_values);
+        tmpl.render(context)
+            .map(|x| x.into_bytes())
+            .map_err(|e| map_bad_gateway(e))
     }
 }
 
 impl<'a> AuthenticatedRequest<'a, Incoming> {
     pub async fn get_body(self) -> Result<AuthenticatedRequest<'a, Bytes>, ServerError> {
+        let request = self.request.get_body().await?;
+        Ok(AuthenticatedRequest { request, locals: self.locals, current_profile: self.current_profile })
+    }
+    pub async fn to_text(self) -> Result<AuthenticatedRequest<'a, String>, ServerError> {
+        self.get_body().await?.to_text()
+    }
+}
+impl<'a> AuthenticatedRequest<'a, Bytes> {
+    pub fn to_text(self) -> Result<AuthenticatedRequest<'a, String>, ServerError> {
+        let request = self.request.to_text()?;
+        Ok(AuthenticatedRequest { request, locals: self.locals, current_profile: self.current_profile })
+    }
+}
+
+
+#[derive(Serialize)]
+struct Profile {
+    profile_id: i64,
+    nickname: String,
+}
+
+pub struct CurrentProfile {
+    pub profile_id: i64,
+    pub domain: String,
+    pub pkey: PKey<Private>,
+}
+
+#[derive(Serialize)]
+pub struct Locals {
+    profiles: Vec<Profile>,
+}
+
+pub struct ServerRequest<'a, T> {
+    pub request: hyper::Request<T>,
+    pub global: Arc<GlobalContext<'a>>,
+    pub db: Connection,
+    pub cookies: HashMap<String, String>,
+}
+
+impl<'a, T> ServerRequest<'a, T> {
+    fn new(
+        request: hyper::Request<T>,
+        global: Arc<GlobalContext<'a>>,
+        db: Connection,
+    ) -> Result<Self, ServerError> {
+        let cookie_string = request
+            .headers()
+            .get(COOKIE)
+            .map(|value| value.to_str().ok())
+            .flatten();
+
+        let cookies = cookie_string
+            .map(|s| s.split("; ").collect::<Vec<&str>>())
+            .unwrap_or(Vec::<&str>::new())
+            .iter()
+            .filter_map(|s| s.split_once("="))
+            .map(|(key, value)| (key.to_owned(), value.to_owned()))
+            .collect::<HashMap<String, String>>();
+
+        let req = ServerRequest { request, global, db, cookies };
+        Ok(req)
+    }
+
+    pub fn get_trailing_param(&self, message: &str) -> Result<&str, ServerError> {
+        self.uri()
+            .path()
+            .split("/")
+            .last()
+            .ok_or(error::bad_request(message))
+    }
+
+    pub fn render(&self, path: &str, local_values: Value) -> Result<Vec<u8>, ServerError> {
+        let tmpl = self.global.env.get_template(path).unwrap();
+        tmpl.render(local_values)
+            .map(|x| x.into_bytes())
+            .map_err(|e| map_bad_gateway(e))
+    }
+
+    // pub fn render_block(&self, path: &str, block_name: &str, local_values: Value) -> Vec<u8> {
+    //     let tmpl = self.global.env.get_template(path).unwrap();
+    //     let context = self.make_context(local_values);
+    //     tmpl.eval_to_state(context).unwrap().render_block(block_name).unwrap().into_bytes()
+    // }
+
+}
+
+impl<'a, T> Deref for ServerRequest<'a, T> {
+    type Target = hyper::Request<T>;
+    fn deref(&self) -> &Self::Target {
+        &self.request
+    }
+}
+
+impl<'a> ServerRequest<'a, Incoming> {
+    pub async fn get_body(self) -> Result<ServerRequest<'a, Bytes>, ServerError> {
         let (parts, body) = self.request.into_parts();
         let body_bytes = http_body_util::Limited::new(body, 1024 * 64);
 
@@ -315,52 +262,34 @@ impl<'a> AuthenticatedRequest<'a, Incoming> {
             .map_err(|_| body_too_large())?;
 
         let request = hyper::Request::from_parts(parts, bytes);
-        let current_profile = self.current_profile;
         let global = self.global;
         let db = self.db;
-        let locals = self.locals;
         let cookies = self.cookies;
 
-        Ok(AuthenticatedRequest {
-            request,
-            global,
-            db,
-            current_profile,
-            cookies,
-            locals,
-        })
+        Ok(ServerRequest { request, global, db, cookies, })
     }
 
-    pub async fn to_text(self) -> Result<AuthenticatedRequest<'a, String>, ServerError> {
+    pub async fn to_text(self) -> Result<ServerRequest<'a, String>, ServerError> {
         self.get_body().await?.to_text()
     }
 }
 
 // Not sure that I even need this intermediate state at all right now
 // But I think it will become relevant for uploading images
-impl<'a> AuthenticatedRequest<'a, Bytes> {
-    pub fn to_text(self) -> Result<AuthenticatedRequest<'a, String>, ServerError> {
+impl<'a> ServerRequest<'a, Bytes> {
+    pub fn to_text(self) -> Result<ServerRequest<'a, String>, ServerError> {
         let (parts, body) = self.request.into_parts();
         let str = String::from_utf8(body.to_vec()).map_err(|_| body_not_utf8())?;
         let request = hyper::Request::from_parts(parts, str);
 
-        let current_profile = self.current_profile;
         let global = self.global;
         let db = self.db;
-        let locals = self.locals;
         let cookies = self.cookies;
-        Ok(AuthenticatedRequest {
-            request,
-            global,
-            db,
-            current_profile,
-            cookies,
-            locals,
-        })
+        Ok(ServerRequest { request, global, db, cookies })
     }
 }
 
-impl<'a> AuthenticatedRequest<'a, String> {
+impl<'a> ServerRequest<'a, String> {
     pub fn get_form_data<T>(&'a self) -> Result<T, ServerError>
     where
         T: Deserialize<'a>,

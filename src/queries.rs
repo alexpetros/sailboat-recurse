@@ -41,7 +41,6 @@ pub fn get_posts_in_profile(db: &Connection, profile_id: i64) -> Result<Vec<Post
 }
 
 pub async fn get_or_search_for_actor(
-    _db: &mut Connection,
     handle: &FullHandle,
     current_profile: &CurrentProfile,
 ) -> Result<Option<Actor>, ServerError> {

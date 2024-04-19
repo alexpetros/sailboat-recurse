@@ -3,6 +3,7 @@ use crate::server::error::body_not_utf8;
 use crate::server::server_request::AuthedRequest;
 use crate::server::server_response::{send, ServerResponse};
 use crate::templates::_partials::post::Post;
+use chrono::Utc;
 use minijinja::context;
 use serde::Deserialize;
 use tracing::log::debug;
@@ -17,9 +18,12 @@ pub async fn post(req: AuthedRequest<'_>) -> ServerResponse {
     let req = req.to_text().await?;
     let form: PostForm = req.get_form_data()?;
     let profile_id: i64 = form.profile_id.parse().map_err(|_| body_not_utf8())?;
+
+    // Not sure why sqlite isn't doing this automatically, the way it should
+    let now = Utc::now().format("%FT%TZ").to_string();
     req.db.execute(
-        "INSERT INTO posts (profile_id, content) VALUES (?1, ?2)",
-        (&profile_id, &form.content),
+        "INSERT INTO posts (profile_id, content, created_at) VALUES (?1, ?2, ?3)",
+        (&profile_id, &form.content, &now),
     )?;
     let post_id = req.db.last_insert_rowid();
 

@@ -10,12 +10,12 @@ use crate::server::error::bad_gateway;
 use crate::server::server_request::AuthedRequest;
 use crate::server::server_response::{send, ServerResponse};
 
-pub async fn get(mut req: AuthedRequest<'_>) -> ServerResponse {
+pub async fn get(req: AuthedRequest<'_>) -> ServerResponse {
     let url_param = req.uri().path().split('/').last().unwrap();
     let handle = get_full_handle(url_param)?;
 
     let actor =
-        queries::get_or_search_for_actor(&mut req.db, &handle, &req.current_profile).await?;
+        queries::get_or_search_for_actor(&handle, &req.current_profile).await?;
     let actor = match actor {
         None => return Ok(send("No account found")),
         Some(actor) => actor,
