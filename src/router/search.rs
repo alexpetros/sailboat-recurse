@@ -3,7 +3,7 @@ use minijinja::context;
 use serde::Deserialize;
 
 use crate::queries;
-use crate::server::server_request::IncomingRequest;
+use crate::server::server_request::AuthedRequest;
 use crate::server::server_response::send;
 use crate::server::server_response::ServerResponse;
 
@@ -12,12 +12,12 @@ struct Query {
     q: String,
 }
 
-pub fn get(req: IncomingRequest<'_>) -> ServerResponse {
+pub fn get(req: AuthedRequest<'_>) -> ServerResponse {
     let body = req.render("search.html", context! {})?;
     Ok(send(body))
 }
 
-pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
+pub async fn post(req: AuthedRequest<'_>) -> ServerResponse {
     let mut req = req.to_text().await?;
     let query: Query = req.get_form_data()?;
     let handle = get_full_handle(&query.q)?;

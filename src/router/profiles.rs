@@ -1,4 +1,4 @@
-use crate::server::server_request::IncomingRequest;
+use crate::server::server_request::UnauthedRequest;
 use crate::server::server_response::redirect;
 use crate::server::server_response::ServerResponse;
 use openssl::pkey::PKey;
@@ -14,7 +14,7 @@ struct Profile {
     profile_id: i64,
     preferred_username: String,
     display_name: String,
-    internal_name: String,
+    nickname: String,
     private_key_pem: String,
 }
 
@@ -22,14 +22,14 @@ struct Profile {
 struct NewProfile {
     preferred_username: String,
     display_name: String,
-    internal_name: String,
+    nickname: String,
 }
 
 static LONG_ACCEPT_HEADER: &str =
     "application/ld+json;profile=“https://www.w3.org/ns/activitystreams";
 static SHORT_ACCEPT_HEADER: &str = "application/activity+json";
 
-pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
+pub async fn post(req: UnauthedRequest<'_>) -> ServerResponse {
     let req = req.to_text().await?;
     let form: NewProfile = req.get_form_data()?;
 
@@ -42,12 +42,12 @@ pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
     let pkey = String::from_utf8(pkey).unwrap();
 
     req.db.execute(
-        "INSERT INTO profiles (preferred_username, display_name, internal_name, private_key_pem)
+        "INSERT INTO profiles (preferred_username, display_name, nickname, private_key_pem)
         VALUES (?1, ?2, ?3, ?4)",
         (
             &form.preferred_username,
             &form.display_name,
-            &form.internal_name,
+            &form.nickname,
             &pkey,
         ),
     )?;

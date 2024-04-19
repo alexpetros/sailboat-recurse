@@ -6,7 +6,8 @@ use hyper::{Response, StatusCode};
 use minijinja::context;
 
 use crate::server::error::ServerError;
-use crate::server::server_request::IncomingRequest;
+
+use super::server_request::SR;
 
 pub type ServerResponse = Result<Response<BoxBody<Bytes, hyper::Error>>, ServerError>;
 
@@ -50,7 +51,7 @@ pub fn send_status_and_message(error: ServerError) -> ServerResponse {
     Ok(res)
 }
 
-pub fn not_found(req: IncomingRequest<'_>) -> ServerResponse {
+pub fn not_found<T> (req: SR<T>) -> ServerResponse {
     let page = req.render("404.html", context! {})?;
     let mut res = send(page);
     *res.status_mut() = StatusCode::NOT_FOUND;

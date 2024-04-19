@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::server::server_request::IncomingRequest;
+use crate::server::server_request::AuthedRequest;
 use crate::server::server_response::{send, ServerResponse};
 
 #[derive(Serialize, Deserialize)]
@@ -12,7 +12,7 @@ struct Actor {
     host: String,
 }
 
-pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
+pub async fn post(req: AuthedRequest<'_>) -> ServerResponse {
     let req = req.to_text().await?;
     let form: Actor = req.get_form_data()?;
 

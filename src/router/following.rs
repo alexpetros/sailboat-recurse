@@ -1,7 +1,7 @@
 use minijinja::context;
 use serde::Serialize;
 
-use crate::server::server_request::IncomingRequest;
+use crate::server::server_request::AuthedRequest;
 use crate::server::server_response::{send, ServerResponse};
 
 #[derive(Serialize)]
@@ -11,7 +11,7 @@ struct Actor {
     handle: String,
 }
 
-pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
+pub async fn get(req: AuthedRequest<'_>) -> ServerResponse {
     let mut query = req
         .db
         .prepare("SELECT url, name, handle FROM followed_actors")?;

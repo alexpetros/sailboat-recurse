@@ -1,6 +1,6 @@
 use crate::server::error;
 use crate::server::error::body_not_utf8;
-use crate::server::server_request::IncomingRequest;
+use crate::server::server_request::AuthedRequest;
 use crate::server::server_response::{send, ServerResponse};
 use crate::templates::_partials::post::Post;
 use minijinja::context;
@@ -13,7 +13,7 @@ struct PostForm {
     content: String,
 }
 
-pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
+pub async fn post(req: AuthedRequest<'_>) -> ServerResponse {
     let req = req.to_text().await?;
     let form: PostForm = req.get_form_data()?;
     let profile_id: i64 = form.profile_id.parse().map_err(|_| body_not_utf8())?;
@@ -48,7 +48,7 @@ pub async fn post(req: IncomingRequest<'_>) -> ServerResponse {
     Ok(send(body))
 }
 
-pub fn delete(req: IncomingRequest<'_>) -> ServerResponse {
+pub fn delete(req: AuthedRequest<'_>) -> ServerResponse {
     let post_param = req
         .uri()
         .path()

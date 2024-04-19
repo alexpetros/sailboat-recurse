@@ -32,7 +32,7 @@ CREATE TABLE globals (
 INSERT INTO globals (key, value) VALUES
 ('domain', 'sailboat.fly.dev');
 
-/* INSERT INTO profiles (internal_name, display_name, handle) */
+/* INSERT INTO profiles (nickname, display_name, handle) */
 /* VALUES ('Thoughts', 'Alex Petros', 'thoughts'); */
 
 /* INSERT INTO posts (profile_id, content) */

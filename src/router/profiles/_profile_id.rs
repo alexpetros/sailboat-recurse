@@ -3,7 +3,7 @@ use crate::activitypub::objects::Context;
 use crate::queries::get_posts_in_profile;
 use crate::router::profiles::{Profile, LONG_ACCEPT_HEADER, SHORT_ACCEPT_HEADER};
 use crate::server::error::bad_request;
-use crate::server::server_request::IncomingRequest;
+use crate::server::server_request::AuthedRequest;
 use crate::server::server_response;
 use crate::server::server_response::{send, send_status, ServerResponse};
 use hyper::header::{HeaderValue, ACCEPT, CONTENT_TYPE};
@@ -14,7 +14,7 @@ use tracing::log::debug;
 
 pub mod outbox;
 
-pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
+pub async fn get(req: AuthedRequest<'_>) -> ServerResponse {
     let profile_param = req.get_trailing_param("Missing profile ID")?;
 
     let profile_id = match profile_param.split_once("#") {
@@ -26,7 +26,7 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
 
     let profile = req.db.query_row(
         "
-        SELECT profile_id, preferred_username, display_name, internal_name, private_key_pem
+        SELECT profile_id, preferred_username, display_name, nickname, private_key_pem
         FROM profiles where profile_id = ?1",
         [profile_id],
         |row| {
@@ -34,7 +34,7 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
                 profile_id: row.get(0)?,
                 preferred_username: row.get(1)?,
                 display_name: row.get(2)?,
-                internal_name: row.get(3)?,
+                nickname: row.get(3)?,
                 private_key_pem: row.get(4)?,
             };
             Ok(profile)
@@ -66,7 +66,7 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
     }
 }
 
-async fn serve_html_profile(req: IncomingRequest<'_>, profile: Profile) -> ServerResponse {
+async fn serve_html_profile(req: AuthedRequest<'_>, profile: Profile) -> ServerResponse {
     // let domain = req.domain;
     let posts = get_posts_in_profile(&req.db, profile.profile_id)?;
     let context = context! { profile => profile, posts => posts };
@@ -75,7 +75,7 @@ async fn serve_html_profile(req: IncomingRequest<'_>, profile: Profile) -> Serve
     Ok(server_response::send(body))
 }
 
-fn serve_json_profile(req: IncomingRequest<'_>, profile: Profile) -> ServerResponse {
+fn serve_json_profile(req: AuthedRequest<'_>, profile: Profile) -> ServerResponse {
     let domain = &req.current_profile.domain;
 
     let id = format!("https://{}/profiles/{}", domain, profile.profile_id);

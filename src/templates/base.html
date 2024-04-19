@@ -19,7 +19,7 @@
         <summary>Profiles</summary>
         <ul>
           {% for profile in profiles %}
-          <li><a href="/switch/{{ profile.profile_id }}">{{ profile.internal_name }}</a></li>
+          <li><a href="/switch/{{ profile.profile_id }}">{{ profile.nickname }}</a></li>
           {% endfor %}
           <li><a href="/profiles/new">(Create New)</a></li>
         </ul>

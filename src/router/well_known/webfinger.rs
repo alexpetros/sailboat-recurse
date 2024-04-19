@@ -5,11 +5,9 @@ use crate::server::error::bad_gateway;
 use crate::server::error::bad_request;
 use crate::server::error::map_bad_gateway;
 use crate::server::error::not_found;
-use crate::server::server_request::IncomingRequest;
+use crate::server::server_request::UnauthedRequest;
 use crate::server::server_response;
-use crate::server::server_response::send_status;
 use crate::server::server_response::ServerResponse;
-use hyper::StatusCode;
 use rusqlite::Error::QueryReturnedNoRows;
 use rusqlite::Error::SqliteFailure;
 use serde::Deserialize;
@@ -27,7 +25,7 @@ struct Query {
     resource: String,
 }
 
-pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
+pub async fn get(req: UnauthedRequest<'_>) -> ServerResponse {
     let query = req
         .uri()
         .query()
@@ -48,15 +46,12 @@ pub async fn get(req: IncomingRequest<'_>) -> ServerResponse {
         ));
     }
 
+    // TODO check the domain
     let (handle, domain) = identifier
         .split_once("@")
         .ok_or_else(|| bad_request("Invalid handle resource provided"))?;
 
     debug!("Searching for user {}", handle);
-
-    if domain != req.current_profile.domain {
-        return send_status(StatusCode::NOT_FOUND);
-    }
 
     let profile = req.db.query_row(
         "

@@ -7,10 +7,10 @@ use crate::activitypub::objects::outbox::PageOrLink;
 use crate::activitypub::requests::{get_outbox, get_outbox_page};
 use crate::queries;
 use crate::server::error::bad_gateway;
-use crate::server::server_request::IncomingRequest;
+use crate::server::server_request::AuthedRequest;
 use crate::server::server_response::{send, ServerResponse};
 
-pub async fn get(mut req: IncomingRequest<'_>) -> ServerResponse {
+pub async fn get(mut req: AuthedRequest<'_>) -> ServerResponse {
     let url_param = req.uri().path().split('/').last().unwrap();
     let handle = get_full_handle(url_param)?;
 
