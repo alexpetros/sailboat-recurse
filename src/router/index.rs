@@ -13,11 +13,12 @@ struct Profile {
     nickname: String,
 }
 
-pub fn redirect_to_create(_req: UnauthedRequest<'_>) -> ServerResponse {
-    redirect("/profiles/new")
+pub fn get(req: UnauthedRequest<'_>) -> ServerResponse {
+    let body = req.render("index/index.html", context! {})?;
+    Ok(server_response::send(body))
 }
 
-pub async fn get(req: AuthedRequest<'_>) -> ServerResponse {
+pub async fn get_authed(req: AuthedRequest<'_>) -> ServerResponse {
     let posts = get_posts_in_profile(&req.db, req.current_profile.profile_id)?;
     let mut query = req.db.prepare("SELECT count(*) FROM followed_actors")?;
     let follow_count: i64 = query.query_row((), |row| row.get(0))?;
@@ -50,6 +51,6 @@ pub async fn get(req: AuthedRequest<'_>) -> ServerResponse {
         follow_count,
     };
 
-    let body = req.render("index.html", context)?;
+    let body = req.render("index/index_auth.html", context)?;
     Ok(server_response::send(body))
 }

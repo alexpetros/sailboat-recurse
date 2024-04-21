@@ -4,6 +4,8 @@ mod follow;
 mod following;
 mod healthcheck;
 mod index;
+mod login;
+mod logout;
 mod posts;
 mod profiles;
 mod search;
@@ -75,34 +77,42 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
     let sub_routes: Vec<&str> = without_query.split("/").collect();
     let method = req.method().clone();
 
-    match (&method, &sub_routes[1..], req) {
-        (GET, [""], SR::Authed(req)) => index::get(req).await,
-        (GET, [""], SR::Unauthed(req)) => index::redirect_to_create(req),
+    match (&method, req, &sub_routes[1..]) {
+        (GET,    SR::Setup(req),    ["profiles", "new"]) => profiles::new::get(req),
+        (GET,    SR::Setup(req),    _) => profiles::new::redirect_to_create(req),
 
-        (GET, ["feeds", _], SR::Authed(req)) => _feed_handle::get(req).await,
+        (GET,    SR::Authed(req),   [""]) => index::get_authed(req).await,
+        (GET,    SR::Plain(req),    [""]) => index::get(req),
 
-        (POST, ["follow"], SR::Authed(req)) => follow::post(req).await,
-        (GET, ["following"], SR::Authed(req)) => following::get(req).await,
+        (GET,    req,               ["login"]) => login::get(req),
+        (POST,   SR::Plain(req),    ["login"]) => login::post(req).await,
+        (GET,    req,               ["logout"]) => logout::get(req),
 
-        (POST, ["profiles"], SR::Unauthed(req)) => profiles::post(req).await,
+        (GET,    SR::Authed(req),   ["feeds", _]) => _feed_handle::get(req).await,
 
-        (GET, ["profiles", "new"], req) => profiles::new::get(req),
+        (POST,   SR::Authed(req),   ["follow"]) => follow::post(req).await,
+        (GET,    SR::Authed(req),   ["following"]) => following::get(req).await,
 
-        (GET, ["profiles", _], SR::Authed(req)) => _profile_id::get(req).await,
+        (POST,   SR::Authed(req),    ["profiles"]) => profiles::post(req.request).await,
+        (POST,   SR::Setup(req),    ["profiles"]) => profiles::post(req).await,
+
+
+        (GET,    SR::Authed(req),   ["profiles", _]) => _profile_id::get(req).await,
         // (GET, ["profiles", _, "outbox"]) => outbox::get(req),
-        (GET, ["switch", _], SR::Unauthed(req)) => switch::get(req),
+        (GET,    SR::Plain(req),    ["switch", _]) => switch::get(req),
 
-        (GET, ["search", ..], SR::Authed(req)) => search::get(req),
-        (POST, ["search", ..], SR::Authed(req)) => search::post(req).await,
+        (GET,    SR::Authed(req),   ["search", ..]) => search::get(req),
+        (POST,   SR::Authed(req),   ["search", ..]) => search::post(req).await,
 
-        (POST, ["posts"], SR::Authed(req)) => posts::post(req).await,
-        (DELETE, ["posts", ..], SR::Authed(req)) => posts::delete(req),
+        (POST,   SR::Authed(req),   ["posts"]) => posts::post(req).await,
+        (DELETE, SR::Authed(req),   ["posts", ..]) => posts::delete(req),
 
-        (GET, [".well-known", "webfinger"], SR::Unauthed(req)) => webfinger::get(req).await,
+        (GET,    SR::Plain(req),    [".well-known", "webfinger"]) => webfinger::get(req).await,
 
-        (GET, ["debug"], SR::Authed(req)) => debug::get(req),
-        (GET, ["healthcheck"], SR::Authed(req)) => healthcheck::get(req),
-        (_, _, req) => server_response::not_found(req),
+        (GET,    SR::Authed(req),   ["debug"]) => debug::get(req),
+        (GET,    SR::Authed(req),   ["healthcheck"]) => healthcheck::get(req),
+
+        (_, req, _) => server_response::not_found(req),
     }
 }
 

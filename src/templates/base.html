@@ -21,6 +21,7 @@
           {% for profile in profiles %}
           <li><a href="/switch/{{ profile.profile_id }}">{{ profile.nickname }}</a></li>
           {% endfor %}
+          <li><a href="/logout">Logout</a></li>
           <li><a href="/profiles/new">(Create New)</a></li>
         </ul>
       </details>

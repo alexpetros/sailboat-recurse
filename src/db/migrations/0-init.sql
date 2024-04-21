@@ -29,6 +29,11 @@ CREATE TABLE globals (
   value TEXT NOT NULL
 ) STRICT;
 
+CREATE TABLE sessions (
+  token TEXT NOT NULL UNIQUE,
+  timestamp TEXT NOT NULL DEFAULT (strftime('%FT%TZ', CURRENT_TIMESTAMP))
+) STRICT;
+
 INSERT INTO globals (key, value) VALUES
 ('domain', 'sailboat.fly.dev');
 

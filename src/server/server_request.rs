@@ -7,10 +7,10 @@ use hyper::header::COOKIE;
 use hyper::{Method, Uri};
 use minijinja::{context, Value};
 use openssl::pkey::{PKey, Private};
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 use std::sync::Arc;
 use tracing::log::warn;
 
@@ -26,42 +26,56 @@ const ENV: &str = if cfg!(debug_assertions) {
 
 pub enum SR<'a, T> {
     Authed(AuthenticatedRequest<'a, T>),
-    Unauthed(ServerRequest<'a, T>)
+    Setup(ServerRequest<'a, T>),
+    Plain(ServerRequest<'a, T>),
 }
 
 pub type AuthedRequest<'a> = AuthenticatedRequest<'a, Incoming>;
 pub type UnauthedRequest<'a> = ServerRequest<'a, Incoming>;
+pub type SetupRequest<'a> = ServerRequest<'a, Incoming>;
 
 // TODO https://users.rust-lang.org/t/how-to-dispatch-enum-function-to-all-variants/80152/3
-impl<'a, T> SR<'a, T>{
+impl<'a, T> SR<'a, T> {
     pub fn uri(&self) -> &Uri {
         match self {
             SR::Authed(x) => x.uri(),
-            SR::Unauthed(x) => x.uri()
+            SR::Plain(x) => x.uri(),
+            SR::Setup(x) => x.uri(),
         }
     }
+
+    pub fn db(&self) -> &Connection {
+        match self {
+            SR::Authed(x) => &x.db,
+            SR::Plain(x) => &x.db,
+            SR::Setup(x) => &x.db,
+        }
+    }
+
     pub fn method(&self) -> &Method {
         match self {
             SR::Authed(x) => x.method(),
-            SR::Unauthed(x) => x.method()
+            SR::Plain(x) => x.method(),
+            SR::Setup(x) => x.method(),
         }
     }
     pub fn statics(&self) -> &Arc<HashMap<String, Vec<u8>>> {
         match self {
             SR::Authed(x) => &x.request.global.statics,
-            SR::Unauthed(x) => &x.global.statics,
+            SR::Plain(x) => &x.global.statics,
+            SR::Setup(x) => &x.global.statics,
         }
     }
     pub fn render(&self, path: &str, local_values: Value) -> Result<Vec<u8>, ServerError> {
         match self {
             SR::Authed(x) => x.render(path, local_values),
-            SR::Unauthed(x) => x.render(path, local_values)
+            SR::Plain(x) => x.render(path, local_values),
+            SR::Setup(x) => x.render(path, local_values),
         }
     }
 }
 
 pub fn get_current_profile(db: &Connection, cookies: &HashMap<String, String>, domain: String) -> Option<CurrentProfile> {
-
     let current_profile_id = cookies
         .get("current_profile")
         .map(|id| id.parse::<i64>().ok())
@@ -69,9 +83,9 @@ pub fn get_current_profile(db: &Connection, cookies: &HashMap<String, String>, d
 
     let private_key_pem: String = db.query_row(
         "SELECT private_key_pem FROM profiles WHERE profile_id = ?1",
-        (current_profile_id,),
+        (current_profile_id, ),
         |row| Ok(row.get(0)?),
-        ).ok()?;
+    ).ok()?;
     let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes()).ok()?;
     let current_profile = CurrentProfile {
         profile_id: current_profile_id,
@@ -81,23 +95,41 @@ pub fn get_current_profile(db: &Connection, cookies: &HashMap<String, String>, d
     Some(current_profile)
 }
 
-pub fn get_request<'a, T>( request: hyper::Request<T>, g_ctx: &Arc<GlobalContext<'a>>, db: Connection, domain: String,) -> Result<SR<'a, T>, ServerError> {
-
+pub fn get_request<'a, T>(
+    request: hyper::Request<T>,
+    g_ctx: &Arc<GlobalContext<'a>>,
+    db:
+    Connection, domain: String,
+) -> Result<SR<'a, T>, ServerError> {
     let server_request = ServerRequest::new(request, g_ctx.clone(), db)?;
 
-    let current_profile = get_current_profile(&server_request.db, &server_request.cookies, domain.clone());
+    let cookie_token = match server_request.cookies.get("token") {
+        Some(token) => token,
+        None => return Ok(SR::Plain(server_request))
+    };
 
-    if let Some(profile) = current_profile {
+    let token_exists = server_request.db
+        .query_row("SELECT token FROM sessions WHERE token = ?1", (cookie_token, ), |_| { Ok(true) })
+        .optional()?
+        .is_some();
+
+    if token_exists {
+        let profile = get_current_profile(&server_request.db, &server_request.cookies, domain.clone());
+        let profile = match profile {
+            Some(x) => x,
+            None => return Ok(SR::Setup(server_request))
+        };
         let req = AuthenticatedRequest::new(server_request, profile)?;
         Ok(SR::Authed(req))
     } else {
-        Ok(SR::Unauthed(server_request))
+        Ok(SR::Plain(server_request))
     }
 }
+
 pub struct AuthenticatedRequest<'a, T> {
     pub request: ServerRequest<'a, T>,
     pub locals: Locals,
-    pub current_profile: CurrentProfile
+    pub current_profile: CurrentProfile,
 }
 
 impl<'a, T> Deref for AuthenticatedRequest<'a, T> {
@@ -107,37 +139,23 @@ impl<'a, T> Deref for AuthenticatedRequest<'a, T> {
     }
 }
 
-impl<'a, T> DerefMut for AuthenticatedRequest<'a, T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.request
-    }
-}
-
 impl<'a, T> AuthenticatedRequest<'a, T> {
-    pub fn new(
-        request: ServerRequest<'a, T>,
-        current_profile: CurrentProfile,
-    ) -> Result<Self, ServerError> {
+    pub fn new(request: ServerRequest<'a, T>, current_profile: CurrentProfile) -> Result<Self, ServerError> {
         let profiles = {
             let mut query = request.db.prepare("SELECT profile_id, nickname FROM profiles")?;
             let rows = query.query_map((), |row| {
-                let profiles = Profile {
-                    profile_id: row.get(0)?,
-                    nickname: row.get(1)?,
-                };
+                let profiles = Profile { profile_id: row.get(0)?, nickname: row.get(1)?, };
                 Ok(profiles)
             })?;
 
             let mut profiles = Vec::new();
-            for profile in rows {
-                profiles.push(profile?);
-            }
+            for profile in rows { profiles.push(profile?); }
 
             profiles
         };
 
         let locals = Locals { profiles };
-        Ok(Self { request, locals, current_profile, })
+        Ok(Self { request, locals, current_profile })
     }
 
     fn make_context(&self, local_values: Value) -> Value {
@@ -164,6 +182,7 @@ impl<'a> AuthenticatedRequest<'a, Incoming> {
         self.get_body().await?.to_text()
     }
 }
+
 impl<'a> AuthenticatedRequest<'a, Bytes> {
     pub fn to_text(self) -> Result<AuthenticatedRequest<'a, String>, ServerError> {
         let request = self.request.to_text()?;
@@ -197,11 +216,8 @@ pub struct ServerRequest<'a, T> {
 }
 
 impl<'a, T> ServerRequest<'a, T> {
-    fn new(
-        request: hyper::Request<T>,
-        global: Arc<GlobalContext<'a>>,
-        db: Connection,
-    ) -> Result<Self, ServerError> {
+    fn new(request: hyper::Request<T>, global: Arc<GlobalContext<'a>>, db: Connection)
+           -> Result<Self, ServerError> {
         let cookie_string = request
             .headers()
             .get(COOKIE)
@@ -240,7 +256,6 @@ impl<'a, T> ServerRequest<'a, T> {
     //     let context = self.make_context(local_values);
     //     tmpl.eval_to_state(context).unwrap().render_block(block_name).unwrap().into_bytes()
     // }
-
 }
 
 impl<'a, T> Deref for ServerRequest<'a, T> {
@@ -266,7 +281,7 @@ impl<'a> ServerRequest<'a, Incoming> {
         let db = self.db;
         let cookies = self.cookies;
 
-        Ok(ServerRequest { request, global, db, cookies, })
+        Ok(ServerRequest { request, global, db, cookies })
     }
 
     pub async fn to_text(self) -> Result<ServerRequest<'a, String>, ServerError> {
@@ -290,10 +305,7 @@ impl<'a> ServerRequest<'a, Bytes> {
 }
 
 impl<'a> ServerRequest<'a, String> {
-    pub fn get_form_data<T>(&'a self) -> Result<T, ServerError>
-    where
-        T: Deserialize<'a>,
-    {
+    pub fn get_form_data<T: Deserialize<'a>>(&'a self) -> Result<T, ServerError> {
         let str = self.body();
         serde_html_form::from_str::<T>(str).map_err(|e| {
             warn!("failed to deserialize request {}", &self.body());
