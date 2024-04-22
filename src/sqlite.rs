@@ -19,9 +19,7 @@ pub fn get_conn(path: &str) -> Result<Connection, Error> {
 macro_rules! query_row {
     (
         $db:expr,
-        $struct_name:ident {
-            $( $field_name:ident : $type:ty ),+
-        },
+        $struct_name:ident { $( $field_name:ident : $type:ty ),+ },
         $query:literal,
         $params:expr
     ) => {{
@@ -29,17 +27,38 @@ macro_rules! query_row {
         struct $struct_name {
             $( $field_name : $type),+
         }
-        let query = concat!(
-            "SELECT ",
-            $crate::commaize!($( $field_name ),+),
-            " ",
-            $query);
-        let row = $db.query_row(query, $params, |row| {
+        let query_str = concat!("SELECT ", $crate::commaize!($( $field_name ),+), " ", $query);
+        let mut query = $db.prepare(query_str)?;
+        let row = query.query_row($params, |row| {
             let item = $crate::make_struct!(row, $struct_name, $( $field_name ),+);
             Ok(item)
         });
         row
-    }};
+    }}
+}
+
+#[macro_export]
+macro_rules! query_map {
+    (
+        $db:expr,
+        $struct_name:ident { $( $field_name:ident : $type:ty ),+ },
+        $query:literal,
+        $params:expr
+    ) => {{
+        #[derive(Debug, serde::Serialize, serde::Deserialize)]
+        struct $struct_name {
+            $( $field_name : $type),+
+        }
+        let query_str = concat!("SELECT ", $crate::commaize!($( $field_name ),+), " ", $query);
+        let mut query = $db.prepare(query_str)?;
+        let rows = query.query_map($params, |row| {
+            let item = $crate::make_struct!(row, $struct_name, $( $field_name ),+);
+            Ok(item)
+        })?;
+
+        let rows: Vec<$struct_name> = rows.collect::<Result<_, _>>()?;
+        rows
+    }}
 }
 
 #[macro_export]
