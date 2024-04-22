@@ -24,12 +24,7 @@ pub async fn get(req: AuthedRequest<'_>) -> ServerResponse {
         Ok(actor)
     })?;
 
-    // let following: Vec<Actor> = rows.collect();
-
-    let mut following = Vec::new();
-    for actor in rows {
-        following.push(actor?);
-    }
+    let following: Vec<_> = rows.collect::<Result<_, _>>()?;
 
     let context = context! { following };
     let body = req.render("following.html", context)?;

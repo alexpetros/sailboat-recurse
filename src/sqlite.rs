@@ -14,3 +14,72 @@ pub fn get_conn(path: &str) -> Result<Connection, Error> {
     conn.pragma_update(None, "foreign_keys", "ON")?;
     Ok(conn)
 }
+
+#[macro_export]
+macro_rules! query_row {
+    (
+        $db:expr,
+        $struct_name:ident {
+            $( $field_name:ident : $type:ty ),+
+        },
+        $query:literal,
+        $params:expr
+    ) => {{
+        #[derive(Debug, serde::Serialize, serde::Deserialize)]
+        struct $struct_name {
+            $( $field_name : $type),+
+        }
+        let query = concat!(
+            "SELECT ",
+            $crate::commaize!($( $field_name ),+),
+            " ",
+            $query);
+        let row = $db.query_row(query, $params, |row| {
+            let item = $crate::make_struct!(row, $struct_name, $( $field_name ),+);
+            Ok(item)
+        });
+        row
+    }};
+}
+
+#[macro_export]
+macro_rules! make_struct {
+
+    (@ $row:expr, $_count:expr, $struct_name:ident, { } [ $($result:tt)* ]) => {
+        $struct_name {
+            $($result)*
+        }
+    };
+
+    (@
+     $row:expr,
+     $count:expr,
+     $struct_name:ident,
+     { $first_field_name:ident $($field_name:ident)* }
+     [ $($result:tt)* ]) => {
+        $crate::make_struct!(
+            @
+            $row,
+            $count + 1,
+            $struct_name,
+            { $($field_name)* }
+            [$($result)* $first_field_name: $row.get($count)?, ])
+    };
+
+    ($row:expr, $struct_name:ident, $( $field_name:ident ),+ )  => {
+        $crate::make_struct!(@ $row, 0, $struct_name, { $($field_name)* } [])
+    };
+}
+
+#[macro_export]
+macro_rules! commaize {
+    ( $name:ident ) => {
+        stringify!($name)
+    };
+
+    ( $first:ident, $( $name:ident ),+ ) => {
+        concat!(stringify!($first), ", ", $crate::commaize!( $( $name ),+ ))
+    };
+}
+
+

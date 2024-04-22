@@ -21,6 +21,7 @@ pub fn get_posts_in_profile(db: &Connection, profile_id: i64) -> Result<Vec<Post
          ORDER BY created_at DESC
          ",
     )?;
+
     let rows = query.query_map([profile_id], |row| {
         let post = Post {
             post_id: row.get(0)?,
@@ -32,11 +33,7 @@ pub fn get_posts_in_profile(db: &Connection, profile_id: i64) -> Result<Vec<Post
         Ok(post)
     })?;
 
-    let mut posts = Vec::new();
-    for post in rows {
-        posts.push(post?);
-    }
-
+    let posts: Vec<Post> = rows.collect::<Result<_, _>>()?;
     Ok(posts)
 }
 

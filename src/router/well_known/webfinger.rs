@@ -1,6 +1,7 @@
 use crate::activitypub::objects::actor::LinkType;
 use crate::activitypub::objects::webfinger::WebFinger;
 use crate::activitypub::objects::webfinger::WebFingerLink;
+use crate::query_row;
 use crate::server::error::bad_gateway;
 use crate::server::error::bad_request;
 use crate::server::error::map_bad_gateway;
@@ -14,11 +15,6 @@ use serde::Deserialize;
 use serde_json::json;
 use tracing::debug;
 use tracing::warn;
-
-#[derive(Debug, Deserialize)]
-struct Profile {
-    profile_id: i64,
-}
 
 #[derive(Debug, Deserialize)]
 struct Query {
@@ -51,29 +47,24 @@ pub async fn get(req: UnauthedRequest<'_>) -> ServerResponse {
         .split_once("@")
         .ok_or_else(|| bad_request("Invalid handle resource provided"))?;
 
-    debug!("Searching for user {}", handle);
+    debug!("Searching for user {} {}", handle, domain);
 
-    let profile = req.db.query_row(
-        "
-        SELECT profile_id
-        FROM profiles
-        WHERE preferred_username = ?1
-    ",
-        [handle],
-        |row| {
-            let profile = Profile {
-                profile_id: row.get(0)?,
-            };
-            Ok(profile)
-        },
-    );
+    let profile = query_row!(
+        req.db,
+        Profile { profile_id: i64 },
+        "FROM profiles where preferred_username = ?1",
+        [handle]
+        );
 
+
+    println!("{:?}", profile);
     let profile = match profile {
         Ok(x) => Ok(x),
         Err(QueryReturnedNoRows) => Err(not_found()),
         Err(SqliteFailure(_, Some(m))) => Err(bad_gateway(&m)),
         Err(e) => Err(map_bad_gateway(e)),
     }?;
+
 
     let self_link = WebFingerLink {
         rel: "self".to_owned(),
