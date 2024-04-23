@@ -27,7 +27,7 @@ macro_rules! query_row {
         struct $struct_name {
             $( $field_name : $type),+
         }
-        let query_str = concat!("SELECT ", $crate::commaize!($( $field_name ),+), " ", $query);
+        let query_str = concat!("SELECT ", $crate::join_with_commas!($( $field_name ),+), " ", $query);
         let mut query = $db.prepare(query_str)?;
         let row = query.query_row($params, |row| {
             let item = $crate::make_struct!(row, $struct_name, $( $field_name ),+);
@@ -49,7 +49,7 @@ macro_rules! query_map {
         struct $struct_name {
             $( $field_name : $type),+
         }
-        let query_str = concat!("SELECT ", $crate::commaize!($( $field_name ),+), " ", $query);
+        let query_str = concat!("SELECT ", $crate::join_with_commas!($( $field_name ),+), " ", $query);
         let mut query = $db.prepare(query_str)?;
         let rows = query.query_map($params, |row| {
             let item = $crate::make_struct!(row, $struct_name, $( $field_name ),+);
@@ -61,9 +61,12 @@ macro_rules! query_map {
     }}
 }
 
+/// Create a struct recursively
+/// Rust does now allow helper macros to populate the body of a struct definition
+/// So instead we turn each row.get(x) into a token, recursively, and then populate the struct
+/// with those tokens.
 #[macro_export]
 macro_rules! make_struct {
-
     (@ $row:expr, $_count:expr, $struct_name:ident, { } [ $($result:tt)* ]) => {
         $struct_name {
             $($result)*
@@ -90,14 +93,14 @@ macro_rules! make_struct {
     };
 }
 
+/// Stringify and join a series of identifiers with commas
 #[macro_export]
-macro_rules! commaize {
+macro_rules! join_with_commas {
     ( $name:ident ) => {
         stringify!($name)
     };
-
     ( $first:ident, $( $name:ident ),+ ) => {
-        concat!(stringify!($first), ", ", $crate::commaize!( $( $name ),+ ))
+        concat!(stringify!($first), ", ", $crate::join_with_commas!( $( $name ),+ ))
     };
 }
 

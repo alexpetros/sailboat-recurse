@@ -190,7 +190,6 @@ impl<'a> AuthenticatedRequest<'a, Bytes> {
     }
 }
 
-
 #[derive(Serialize)]
 struct Profile {
     profile_id: i64,
