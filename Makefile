@@ -2,6 +2,10 @@ DEBUG_BUILD = ./target/debug/sailboat
 DB_NAME = ./sailboat.db
 # WATCH_FLAGS = -i '*.db' -i '*-shm' -i '*-wal'
 
+.PHONY: ngrok
+ngrok:
+	@./scripts/start-with-ngrok.sh
+
 all: $(DEBUG_BUILD)
 	cargo watch $(WATCH_FLAGS) -x run
 
@@ -12,10 +16,6 @@ $(DEBUG_BUILD):
 .PHONY: release
 release:
 	cargo run --release
-
-.PHONY: ngrok
-ngrok:
-	@./scripts/start-with-ngrok.sh
 
 .PHONY: test
 test:
