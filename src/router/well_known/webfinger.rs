@@ -6,7 +6,7 @@ use crate::server::error::bad_gateway;
 use crate::server::error::bad_request;
 use crate::server::error::map_bad_gateway;
 use crate::server::error::not_found;
-use crate::server::server_request::UnauthedRequest;
+use crate::server::server_request::PlainRequest;
 use crate::server::server_response;
 use crate::server::server_response::ServerResponse;
 use rusqlite::Error::QueryReturnedNoRows;
@@ -21,7 +21,7 @@ struct Query {
     resource: String,
 }
 
-pub async fn get(req: UnauthedRequest<'_>) -> ServerResponse {
+pub async fn get(req: PlainRequest<'_>) -> ServerResponse {
     let query = req
         .uri()
         .query()

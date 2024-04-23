@@ -28,7 +28,7 @@ use tracing::error;
 use tracing::warn;
 
 use crate::server::context::GlobalContext;
-use crate::server::server_request::{self, SR};
+use crate::server::server_request::{AuthState, ServerRequest};
 use crate::server::server_response;
 
 pub const GET: &Method = &Method::GET;
@@ -59,7 +59,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
         db.query_row("SELECT value FROM globals WHERE key = 'domain'", (), |row| row.get(0))?
     };
 
-    let req = server_request::get_request(req, &g_ctx, db, domain)?;
+    let req = ServerRequest::new(req, g_ctx, db, domain)?;
 
     // Serve static files separately
     // TODO: Refactor this so it happens before all the DB stuff
@@ -77,42 +77,42 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
     let sub_routes: Vec<&str> = without_query.split("/").collect();
     let method = req.method().clone();
 
-    match (&method, req, &sub_routes[1..]) {
-        (GET,    SR::Setup(req),    ["profiles", "new"]) => profiles::new::get(req),
-        (GET,    SR::Setup(req),    _) => profiles::new::redirect_to_create(req),
+    match (&method, &req.auth_state, &sub_routes[1..]) {
+        (GET,    AuthState::Setup,       ["profiles", "new"]) => profiles::new::get(req),
+        (GET,    AuthState::Setup,       _) => profiles::new::redirect_to_create(req),
 
-        (GET,    SR::Authed(req),   [""]) => index::get_authed(req).await,
-        (GET,    SR::Plain(req),    [""]) => index::get(req),
+        (GET,    AuthState::Authed(_),   [""]) => index::get_authed(req).await,
+        (GET,    AuthState::Plain,       [""]) => index::get(req),
 
-        (GET,    req,               ["login"]) => login::get(req),
-        (POST,   SR::Plain(req),    ["login"]) => login::post(req).await,
-        (GET,    req,               ["logout"]) => logout::get(req),
+        (GET,    _,                      ["login"]) => login::get(req),
+        (POST,   AuthState::Plain,       ["login"]) => login::post(req).await,
+        (GET,    _,                      ["logout"]) => logout::get(req),
 
-        (GET,    SR::Authed(req),   ["feeds", _]) => _feed_handle::get(req).await,
+        (GET,    AuthState::Authed(_),   ["feeds", _]) => _feed_handle::get(req).await,
 
-        (POST,   SR::Authed(req),   ["follow"]) => follow::post(req).await,
-        (GET,    SR::Authed(req),   ["following"]) => following::get(req).await,
+        (POST,   AuthState::Authed(_),   ["follow"]) => follow::post(req).await,
+        (GET,    AuthState::Authed(_),   ["following"]) => following::get(req).await,
 
-        (POST,   SR::Authed(req),    ["profiles"]) => profiles::post(req.request).await,
-        (POST,   SR::Setup(req),    ["profiles"]) => profiles::post(req).await,
+        (POST,   AuthState::Authed(_),   ["profiles"]) => profiles::post(req).await,
+        (POST,   AuthState::Setup,       ["profiles"]) => profiles::post(req).await,
 
 
-        (GET,    SR::Authed(req),   ["profiles", _]) => _profile_id::get(req).await,
+        (GET,    AuthState::Authed(_),   ["profiles", _]) => _profile_id::get(req).await,
         // (GET, ["profiles", _, "outbox"]) => outbox::get(req),
-        (GET,    SR::Plain(req),    ["switch", _]) => switch::get(req),
+        (GET,    AuthState::Plain,       ["switch", _]) => switch::get(req),
 
-        (GET,    SR::Authed(req),   ["search", ..]) => search::get(req),
-        (POST,   SR::Authed(req),   ["search", ..]) => search::post(req).await,
+        (GET,    AuthState::Authed(_),   ["search", ..]) => search::get(req),
+        (POST,   AuthState::Authed(_),   ["search", ..]) => search::post(req).await,
 
-        (POST,   SR::Authed(req),   ["posts"]) => posts::post(req).await,
-        (DELETE, SR::Authed(req),   ["posts", ..]) => posts::delete(req),
+        (POST,   AuthState::Authed(_),   ["posts"]) => posts::post(req).await,
+        (DELETE, AuthState::Authed(_),   ["posts", ..]) => posts::delete(req),
 
-        (GET,    SR::Plain(req),    [".well-known", "webfinger"]) => webfinger::get(req).await,
+        (GET,    AuthState::Plain,       [".well-known", "webfinger"]) => webfinger::get(req).await,
 
-        (GET,    SR::Authed(req),   ["debug"]) => debug::get(req),
-        (GET,    SR::Authed(req),   ["healthcheck"]) => healthcheck::get(req),
+        (GET,    AuthState::Authed(_),   ["debug"]) => debug::get(req),
+        (GET,    AuthState::Authed(_),   ["healthcheck"]) => healthcheck::get(req),
 
-        (_, req, _) => server_response::not_found(req),
+        _ => server_response::not_found(req),
     }
 }
 

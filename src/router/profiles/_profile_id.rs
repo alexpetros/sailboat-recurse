@@ -76,7 +76,7 @@ async fn serve_html_profile(req: AuthedRequest<'_>, profile: Profile) -> ServerR
 }
 
 fn serve_json_profile(req: AuthedRequest<'_>, profile: Profile) -> ServerResponse {
-    let domain = &req.current_profile.domain;
+    let domain = &req.current_profile().unwrap().domain;
 
     let id = format!("https://{}/profiles/{}", domain, profile.profile_id);
     let inbox = format!("https://{}/inbox", domain);

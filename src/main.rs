@@ -35,7 +35,7 @@ async fn main() {
 
     let db_path = std::env::var("DB_PATH").unwrap_or(DEFAULT_DB.to_owned());
 
-    // If db does not eixst, create it
+    // If db does not exist, create it
     // TODO eventually this needs to be done with some kind of admin/setup panel
     let has_db = Path::new(&db_path).exists();
     if !has_db {

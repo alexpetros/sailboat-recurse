@@ -3,9 +3,9 @@ use minijinja::context;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::Deserialize;
 
-use crate::server::{server_request::{UnauthedRequest, SR}, server_response::{redirect, send, ServerResponse}, utils::make_cookie};
+use crate::server::{server_request::{AnyRequest, PlainRequest}, server_response::{redirect, send, ServerResponse}, utils::make_cookie};
 
-pub fn get<T>(req: SR<T>) -> ServerResponse {
+pub fn get(req: AnyRequest) -> ServerResponse {
     let body = req.render("login.html", context! {})?;
     Ok(send(body))
 }
@@ -15,7 +15,7 @@ struct FormData {
     password: String
 }
 
-pub async fn post(req: UnauthedRequest<'_>) -> ServerResponse {
+pub async fn post(req: PlainRequest<'_>) -> ServerResponse {
     let req = req.to_text().await?;
     let form: FormData = req.get_form_data()?;
     let _pass = form.password;
