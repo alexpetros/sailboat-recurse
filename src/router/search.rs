@@ -5,25 +5,25 @@ use serde::Deserialize;
 use crate::queries;
 use crate::server::server_request::AuthedRequest;
 use crate::server::server_response::send;
-use crate::server::server_response::ServerResponse;
+use crate::server::server_response::ServerResult;
 
 #[derive(Deserialize)]
 struct Query {
     q: String,
 }
 
-pub fn get(req: AuthedRequest<'_>) -> ServerResponse {
+pub async fn get(req: AuthedRequest<'_>) -> ServerResult {
     let body = req.render("search.html", context! {})?;
     Ok(send(body))
 }
 
-pub async fn post(req: AuthedRequest<'_>) -> ServerResponse {
+pub async fn post(req: AuthedRequest<'_>) -> ServerResult {
     let req = req.to_text().await?;
     let query: Query = req.get_form_data()?;
     let handle = get_full_handle(&query.q)?;
 
     let actor =
-        queries::get_or_search_for_actor(&handle, &req.current_profile().unwrap()).await?;
+        queries::get_or_search_for_actor(&handle, &req.locals.current_profile).await?;
     let actor = match actor {
         None => return Ok(send("No account found")),
         Some(actor) => actor,

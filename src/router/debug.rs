@@ -1,8 +1,8 @@
-use crate::server::server_request::AuthedRequest;
+use crate::server::server_request::PlainRequest;
 use crate::server::server_response;
-use crate::server::server_response::ServerResponse;
+use crate::server::server_response::ServerResult;
 
-pub fn get(req: AuthedRequest<'_>) -> ServerResponse {
+pub async fn get(req: PlainRequest<'_>) -> ServerResult {
     let body = req.global.startup_time.to_string();
     Ok(server_response::send(body))
 }

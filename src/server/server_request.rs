@@ -20,9 +20,9 @@ const ENV: &str = if cfg!(debug_assertions) { "debug" } else { "prod" };
 // const DEFAULT_PROFILE: i64 = 1;
 
 #[derive(Serialize)]
-struct Profile {
-    profile_id: i64,
-    nickname: String,
+pub struct Profile {
+    pub profile_id: i64,
+    pub nickname: String,
 }
 
 #[derive(Serialize)]
@@ -34,106 +34,74 @@ pub struct CurrentProfile {
 
 #[derive(Serialize)]
 pub struct Locals {
-    profiles: Vec<Profile>,
+    pub profiles: Vec<Profile>,
     pub current_profile: CurrentProfile,
 }
 
-pub enum AuthState {
-    Authed(Locals),
-    Setup,
-    Plain,
+pub struct NoAuth;
+
+pub struct Setup {
+    pub current_profile: CurrentProfile,
 }
 
-pub type AuthedRequest<'a> = ServerRequest<'a, Incoming>;
-pub type SetupRequest<'a> = ServerRequest<'a, Incoming>;
-pub type PlainRequest<'a> = ServerRequest<'a, Incoming>;
-pub type AnyRequest<'a> = ServerRequest<'a, Incoming>;
+pub trait AuthState {
+    fn get_locals(&self) -> Option<&Locals>;
+}
 
-pub struct ServerRequest<'a, T> {
+impl AuthState for Setup {
+    fn get_locals(&self) -> Option<&Locals> { None }
+}
+
+impl AuthState for NoAuth {
+    fn get_locals(&self) -> Option<&Locals> { None }
+}
+
+impl AuthState for Locals {
+    fn get_locals(&self) -> Option<&Locals> { Some(self) }
+}
+
+pub type AuthedRequest<'a> = ServerRequest<'a, Incoming, Locals>;
+pub type SetupRequest<'a> = ServerRequest<'a, Incoming, Setup>;
+pub type PlainRequest<'a> = ServerRequest<'a, Incoming, NoAuth>;
+pub type AnyRequest<'a, Au> = ServerRequest<'a, Incoming, Au>;
+
+pub struct ServerRequest<'a, T, Au: AuthState> {
     pub request: hyper::Request<T>,
     pub global: Arc<GlobalContext<'a>>,
     pub db: Connection,
     pub cookies: HashMap<String, String>,
-    pub auth_state: AuthState,
+    pub locals: Au,
     pub domain: String,
 }
 
-impl<'a, T> ServerRequest<'a, T> {
-    pub fn new(request: hyper::Request<T>, global: Arc<GlobalContext<'a>>, db: Connection, domain: String)
-           -> Result<Self, ServerError> {
-        let cookie_string = request
-            .headers()
-            .get(COOKIE)
-            .map(|value| value.to_str().ok())
-            .flatten();
+pub enum AuthStatus<'a, T> {
+    Success(ServerRequest<'a, T, Setup>),
+    Failure(ServerRequest<'a, T, NoAuth>),
+}
 
-        let cookies = cookie_string
-            .map(|s| s.split("; ").collect::<Vec<&str>>())
-            .unwrap_or(Vec::<&str>::new())
-            .iter()
-            .filter_map(|s| s.split_once("="))
-            .map(|(key, value)| (key.to_owned(), value.to_owned()))
-            .collect::<HashMap<String, String>>();
+pub fn new_request<T>(
+    request: hyper::Request<T>,
+    global: Arc<GlobalContext>,
+    db: Connection, domain: String
+) -> Result<ServerRequest<T, NoAuth>, ServerError> {
+    let cookie_string = request
+        .headers()
+        .get(COOKIE)
+        .map(|value| value.to_str().ok())
+        .flatten();
 
-        let mut req = ServerRequest { request, global, db, domain, cookies, auth_state: AuthState::Plain };
+    let cookies = cookie_string
+        .map(|s| s.split("; ").collect::<Vec<&str>>())
+        .unwrap_or(Vec::<&str>::new())
+        .iter()
+        .filter_map(|s| s.split_once("="))
+        .map(|(key, value)| (key.to_owned(), value.to_owned()))
+        .collect::<HashMap<String, String>>();
 
-        let cookie_token = match req.cookies.get("token") {
-            Some(token) => token,
-            None => return Ok(req)
-        };
+    Ok(ServerRequest { request, global, db, domain, cookies, locals: NoAuth })
+}
 
-        let token_exists = req.db
-            .query_row("SELECT token FROM sessions WHERE token = ?1",
-                       (cookie_token, ),
-                       |_| { Ok(true) })
-            .optional()?
-            .is_some();
-
-        if !token_exists {
-            return Ok(req);
-        }
-
-        let profile = get_current_profile(&req.db, &req.cookies, &req.domain);
-        let current_profile = match profile {
-            Some(x) => x,
-            None => {
-                req.auth_state = AuthState::Setup;
-                return Ok(req);
-            }
-        };
-
-        let profiles = {
-            let mut query = req.db.prepare("SELECT profile_id, nickname FROM profiles")?;
-            let rows = query.query_map((), |row| {
-                let profiles = Profile { profile_id: row.get(0)?, nickname: row.get(1)? };
-                Ok(profiles)
-            })?;
-
-            let mut profiles = Vec::new();
-            for profile in rows { profiles.push(profile?); }
-
-            profiles
-        };
-
-        let locals = Locals { profiles, current_profile };
-        req.auth_state = AuthState::Authed(locals);
-        Ok(req)
-    }
-
-    pub fn current_profile(&self) -> Option<&CurrentProfile> {
-        match &self.auth_state {
-            AuthState::Authed(locals) => Some(&locals.current_profile),
-            _ => None
-        }
-    }
-
-    pub fn get_locals(&self) -> Option<&Locals> {
-        match &self.auth_state {
-            AuthState::Authed(locals) => Some(locals),
-            _ => None
-        }
-    }
-
+impl<'a, T, Au: AuthState> ServerRequest<'a, T, Au> {
     pub fn get_trailing_param(&self, message: &str) -> Result<&str, ServerError> {
         self.uri()
             .path()
@@ -144,7 +112,7 @@ impl<'a, T> ServerRequest<'a, T> {
 
     fn make_context(&self, local_values: Value) -> Value {
         let global_values = context! { env => ENV };
-        if let Some(locals) = self.get_locals() {
+        if let Some(locals) = self.locals.get_locals() {
             let request_values = context! { profiles => locals.profiles };
             context! { ..local_values, ..request_values, ..global_values }
         } else {
@@ -165,18 +133,78 @@ impl<'a, T> ServerRequest<'a, T> {
 //     let context = self.make_context(local_values);
 //     tmpl.eval_to_state(context).unwrap().render_block(block_name).unwrap().into_bytes()
 // }
-
 }
 
-impl<'a, T> Deref for ServerRequest<'a, T> {
+impl<'a, T, Au: AuthState> Deref for ServerRequest<'a, T, Au> {
     type Target = hyper::Request<T>;
     fn deref(&self) -> &Self::Target {
         &self.request
     }
 }
 
-impl<'a> ServerRequest<'a, Incoming> {
-    pub async fn get_body(self) -> Result<ServerRequest<'a, Bytes>, ServerError> {
+impl<'a, T> ServerRequest<'a, T, NoAuth> {
+    pub fn to_setup(self) -> AuthStatus<'a, T> {
+        let cookie_token = match self.cookies.get("token") {
+            Some(token) => token,
+            None => return AuthStatus::Failure(self)
+        };
+
+        let token_exists = self.db
+            .query_row("SELECT token FROM sessions WHERE token = ?1", (cookie_token, ), |_| { Ok(true) })
+            .optional()
+            .ok()
+            .flatten()
+            .is_some();
+
+        if !token_exists {
+            return AuthStatus::Failure(self)
+        }
+
+        let current_profile = get_current_profile(&self.db, &self.cookies, &self.domain);
+        let current_profile = match current_profile {
+            Some(p) => p,
+            None => return AuthStatus::Failure(self)
+        };
+
+        let request = self.request;
+        let global = self.global;
+        let db = self.db;
+        let domain = self.domain;
+        let cookies = self.cookies;
+        let locals = Setup { current_profile };
+
+        AuthStatus::Success(ServerRequest { request, global, db, domain, cookies, locals })
+    }
+}
+
+impl<'a, T> ServerRequest<'a, T, Setup> {
+    pub fn authenticate(self) -> Result<ServerRequest<'a, T, Locals>, ServerError> {
+        let profiles = {
+            let mut query = self.db.prepare("SELECT profile_id, nickname FROM profiles")?;
+            let rows = query.query_map((), |row| {
+                let profiles = Profile { profile_id: row.get(0)?, nickname: row.get(1)? };
+                Ok(profiles)
+            })?;
+
+            let mut profiles = Vec::new();
+            for profile in rows { profiles.push(profile?); }
+
+            profiles
+        };
+
+        let request = self.request;
+        let global = self.global;
+        let db = self.db;
+        let domain = self.domain;
+        let cookies = self.cookies;
+        let locals = Locals { profiles, current_profile: self.locals.current_profile };
+
+        Ok(ServerRequest { request, global, db, domain, cookies, locals })
+    }
+}
+
+impl<'a, Au: AuthState> ServerRequest<'a, Incoming, Au> {
+    pub async fn get_body(self) -> Result<ServerRequest<'a, Bytes, Au>, ServerError> {
         let (parts, body) = self.request.into_parts();
         let body_bytes = http_body_util::Limited::new(body, 1024 * 64);
 
@@ -191,20 +219,20 @@ impl<'a> ServerRequest<'a, Incoming> {
         let db = self.db;
         let domain = self.domain;
         let cookies = self.cookies;
-        let auth_state = self.auth_state;
+        let locals = self.locals;
 
-        Ok(ServerRequest { request, global, db, domain, cookies, auth_state })
+        Ok(ServerRequest { request, global, db, domain, cookies, locals })
     }
 
-    pub async fn to_text(self) -> Result<ServerRequest<'a, String>, ServerError> {
+    pub async fn to_text(self) -> Result<ServerRequest<'a, String, Au>, ServerError> {
         self.get_body().await?.to_text()
     }
 }
 
 // Not sure that I even need this intermediate state at all right now
 // But I think it will become relevant for uploading images
-impl<'a> ServerRequest<'a, Bytes> {
-    pub fn to_text(self) -> Result<ServerRequest<'a, String>, ServerError> {
+impl<'a, Au: AuthState> ServerRequest<'a, Bytes, Au> {
+    pub fn to_text(self) -> Result<ServerRequest<'a, String, Au>, ServerError> {
         let (parts, body) = self.request.into_parts();
         let str = String::from_utf8(body.to_vec()).map_err(|_| body_not_utf8())?;
         let request = hyper::Request::from_parts(parts, str);
@@ -213,13 +241,13 @@ impl<'a> ServerRequest<'a, Bytes> {
         let db = self.db;
         let domain = self.domain;
         let cookies = self.cookies;
-        let auth_state = self.auth_state;
+        let locals = self.locals;
 
-        Ok(ServerRequest { request, global, db, domain, cookies, auth_state })
+        Ok(ServerRequest { request, global, db, domain, cookies, locals })
     }
 }
 
-impl<'a> ServerRequest<'a, String> {
+impl<'a, Au: AuthState> ServerRequest<'a, String, Au> {
     pub fn get_form_data<T: Deserialize<'a>>(&'a self) -> Result<T, ServerError> {
         let str = self.body();
         serde_html_form::from_str::<T>(str).map_err(|e| {

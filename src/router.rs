@@ -14,8 +14,8 @@ mod switch;
 mod well_known;
 
 use crate::router::well_known::webfinger;
-use crate::server::error::ServerError;
-use crate::server::server_response::ServerResponse;
+use crate::server::error::{forbidden, ServerError};
+use crate::server::server_response::ServerResult;
 use crate::sqlite::get_conn;
 use feeds::_feed_handle;
 use hyper::body::Incoming;
@@ -28,7 +28,7 @@ use tracing::error;
 use tracing::warn;
 
 use crate::server::context::GlobalContext;
-use crate::server::server_request::{AuthState, ServerRequest};
+use crate::server::server_request::{AuthedRequest, AuthStatus, new_request, PlainRequest, SetupRequest};
 use crate::server::server_response;
 
 pub const GET: &Method = &Method::GET;
@@ -37,8 +37,29 @@ pub const DELETE: &Method = &Method::DELETE;
 
 const DEFAULT_DB: &str = "./sailboat.db";
 
+macro_rules! routes {
+    (
+        $req:ident,
+        $method_to_match:ident,
+        $sub_routes_to_match:ident, {
+            $(($method:ident, $sub_routes:pat) => ($auth_func:ident, $handler:expr)),*
+            $(,)?
+        }
+    ) => {
+        match (&$method_to_match, $sub_routes_to_match) {
+            $(
+                ($method, $sub_routes) => {
+                    let req = $auth_func($req)?;
+                    $handler(req).await
+                }
+            )*
+            _ => server_response::not_found($req),
+        }
+    };
+}
+
 #[rustfmt::skip]
-pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> ServerResponse {
+pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> ServerResult {
     let path = req.uri().path();
     let host = req
         .headers()
@@ -59,7 +80,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
         db.query_row("SELECT value FROM globals WHERE key = 'domain'", (), |row| row.get(0))?
     };
 
-    let req = ServerRequest::new(req, g_ctx, db, domain)?;
+    let req = new_request(req, g_ctx, db, domain)?;
 
     // Serve static files separately
     // TODO: Refactor this so it happens before all the DB stuff
@@ -75,58 +96,67 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
 
     // Split into sub-routes
     let sub_routes: Vec<&str> = without_query.split("/").collect();
+    let sub_routes = &sub_routes[1..];
     let method = req.method().clone();
 
-    match (&method, &req.auth_state, &sub_routes[1..]) {
-        (GET,    AuthState::Setup,       ["profiles", "new"]) => profiles::new::get(req),
-        (GET,    AuthState::Setup,       _) => profiles::new::redirect_to_create(req),
+    routes!(req, method, sub_routes, {
+        (GET,       [""]) =>                            (any, index::get),
 
-        (GET,    AuthState::Authed(_),   [""]) => index::get_authed(req).await,
-        (GET,    AuthState::Plain,       [""]) => index::get(req),
+        (GET,       ["login"]) =>                       (any, login::get),
+        (POST,      ["login"]) =>                       (any, login::post),
+        (GET,       ["logout"]) =>                      (any, logout::get),
 
-        (GET,    _,                      ["login"]) => login::get(req),
-        (POST,   AuthState::Plain,       ["login"]) => login::post(req).await,
-        (GET,    _,                      ["logout"]) => logout::get(req),
+        (GET,       ["feeds", _]) =>                    (require_auth, _feed_handle::get),
+        (POST,      ["follow"]) =>                      (require_auth, follow::post),
+        (GET,       ["following"]) =>                   (require_auth, following::get),
 
-        (GET,    AuthState::Authed(_),   ["feeds", _]) => _feed_handle::get(req).await,
+        (POST,      ["profiles"]) =>                    (require_setup, profiles::post),
+        (GET,       ["profiles", "new"]) =>             (require_setup, profiles::new::get),
+        (GET,       ["profiles", _]) =>                 (require_auth, _profile_id::get),
 
-        (POST,   AuthState::Authed(_),   ["follow"]) => follow::post(req).await,
-        (GET,    AuthState::Authed(_),   ["following"]) => following::get(req).await,
+        (POST,      ["posts"]) =>                       (require_auth, posts::post),
+        (DELETE,    ["posts", ..]) =>                   (require_auth, posts::delete),
 
-        (POST,   AuthState::Authed(_),   ["profiles"]) => profiles::post(req).await,
-        (POST,   AuthState::Setup,       ["profiles"]) => profiles::post(req).await,
+        (GET,       ["switch", _]) =>                   (any, switch::get),
+        (GET,       ["search", ..]) =>                  (require_auth, search::get),
+        (POST,      ["search", ..]) =>                  (require_auth, search::post),
 
+        (GET,       [".well-known", "webfinger"]) =>    (any, webfinger::get),
 
-        (GET,    AuthState::Authed(_),   ["profiles", _]) => _profile_id::get(req).await,
-        // (GET, ["profiles", _, "outbox"]) => outbox::get(req),
-        (GET,    AuthState::Plain,       ["switch", _]) => switch::get(req),
-
-        (GET,    AuthState::Authed(_),   ["search", ..]) => search::get(req),
-        (POST,   AuthState::Authed(_),   ["search", ..]) => search::post(req).await,
-
-        (POST,   AuthState::Authed(_),   ["posts"]) => posts::post(req).await,
-        (DELETE, AuthState::Authed(_),   ["posts", ..]) => posts::delete(req),
-
-        (GET,    AuthState::Plain,       [".well-known", "webfinger"]) => webfinger::get(req).await,
-
-        (GET,    AuthState::Authed(_),   ["debug"]) => debug::get(req),
-        (GET,    AuthState::Authed(_),   ["healthcheck"]) => healthcheck::get(req),
-
-        _ => server_response::not_found(req),
-    }
+        (GET,       ["debug"]) =>                       (any, debug::get),
+        (GET,       ["healthcheck"]) =>                 (any, healthcheck::get),
+    })
 }
 
-fn log_warn_and_send_specific_message(err: ServerError) -> ServerResponse {
+fn any(req: PlainRequest) -> Result<PlainRequest, ServerError> {
+    Ok(req)
+}
+
+fn require_auth(req: PlainRequest) -> Result<AuthedRequest, ServerError> {
+    let req = require_setup(req)?;
+    req.authenticate()
+}
+
+fn require_setup(req: PlainRequest) -> Result<SetupRequest, ServerError> {
+    let req = req.to_setup();
+    let req = match req {
+        AuthStatus::Success(r) => r,
+        AuthStatus::Failure(_) => return Err(forbidden())
+    };
+    Ok(req)
+}
+
+fn log_warn_and_send_specific_message(err: ServerError) -> ServerResult {
     warn!("{}", err);
     server_response::send_status_and_message(err)
 }
 
-fn log_error_and_send_generic_message(err: ServerError) -> ServerResponse {
+fn log_error_and_send_generic_message(err: ServerError) -> ServerResult {
     error!("{}", err);
     server_response::send_status(err.status_code)
 }
 
-pub async fn serve(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> ServerResponse {
+pub async fn serve(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> ServerResult {
     let result = router(req, g_ctx).await;
     if let Err(err) = result {
         // 4xx error messages are passed onto users, the rest aren't

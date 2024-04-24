@@ -5,7 +5,7 @@ use crate::router::profiles::{Profile, LONG_ACCEPT_HEADER, SHORT_ACCEPT_HEADER};
 use crate::server::error::bad_request;
 use crate::server::server_request::AuthedRequest;
 use crate::server::server_response;
-use crate::server::server_response::{send, send_status, ServerResponse};
+use crate::server::server_response::{send, send_status, ServerResult};
 use hyper::header::{HeaderValue, ACCEPT, CONTENT_TYPE};
 use hyper::StatusCode;
 use minijinja::context;
@@ -14,7 +14,7 @@ use tracing::log::debug;
 
 pub mod outbox;
 
-pub async fn get(req: AuthedRequest<'_>) -> ServerResponse {
+pub async fn get(req: AuthedRequest<'_>) -> ServerResult {
     let profile_param = req.get_trailing_param("Missing profile ID")?;
 
     let profile_id = match profile_param.split_once("#") {
@@ -66,7 +66,7 @@ pub async fn get(req: AuthedRequest<'_>) -> ServerResponse {
     }
 }
 
-async fn serve_html_profile(req: AuthedRequest<'_>, profile: Profile) -> ServerResponse {
+async fn serve_html_profile(req: AuthedRequest<'_>, profile: Profile) -> ServerResult {
     // let domain = req.domain;
     let posts = get_posts_in_profile(&req.db, profile.profile_id)?;
     let context = context! { profile => profile, posts => posts };
@@ -75,8 +75,8 @@ async fn serve_html_profile(req: AuthedRequest<'_>, profile: Profile) -> ServerR
     Ok(server_response::send(body))
 }
 
-fn serve_json_profile(req: AuthedRequest<'_>, profile: Profile) -> ServerResponse {
-    let domain = &req.current_profile().unwrap().domain;
+fn serve_json_profile(req: AuthedRequest<'_>, profile: Profile) -> ServerResult {
+    let domain = &req.locals.current_profile.domain;
 
     let id = format!("https://{}/profiles/{}", domain, profile.profile_id);
     let inbox = format!("https://{}/inbox", domain);

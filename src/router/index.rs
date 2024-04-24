@@ -2,16 +2,28 @@ use minijinja::context;
 
 use crate::queries::get_posts_in_profile;
 use crate::query_row;
-use crate::server::server_request::{AuthedRequest, PlainRequest};
-use crate::server::server_response::{self, redirect, ServerResponse};
+use crate::server::server_request::{AuthedRequest, AuthStatus, PlainRequest};
+use crate::server::server_response::{self, redirect, ServerResult};
 
-pub fn get(req: PlainRequest) -> ServerResponse {
+pub async fn get<'a>(req: PlainRequest<'a>) -> ServerResult {
+    let req = match req.to_setup() {
+        AuthStatus::Success(r) => r,
+        AuthStatus::Failure(r) => return get_unauthed(r)
+    };
+
+    match req.authenticate() {
+        Ok(r) => get_authed(r).await,
+        Err(_) => redirect("/profiles/new")
+    }
+}
+
+pub fn get_unauthed(req: PlainRequest) -> ServerResult {
     let body = req.render("index/index.html", context! {})?;
     Ok(server_response::send(body))
 }
 
-pub async fn get_authed(req: AuthedRequest<'_>) -> ServerResponse {
-    let posts = get_posts_in_profile(&req.db, req.current_profile().unwrap().profile_id)?;
+pub async fn get_authed(req: AuthedRequest<'_>) -> ServerResult {
+    let posts = get_posts_in_profile(&req.db, req.locals.current_profile.profile_id)?;
     let mut query = req.db.prepare("SELECT count(*) FROM followed_actors")?;
     let follow_count: i64 = query.query_row((), |row| row.get(0))?;
 
@@ -24,7 +36,7 @@ pub async fn get_authed(req: AuthedRequest<'_>) -> ServerResponse {
             nickname: String
         },
         "FROM profiles where profile_id = ?1",
-        [req.current_profile().unwrap().profile_id]
+        [req.locals.current_profile.profile_id]
     );
 
     let profile = match profile {

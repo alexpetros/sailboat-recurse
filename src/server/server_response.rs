@@ -7,9 +7,11 @@ use minijinja::context;
 
 use crate::server::error::ServerError;
 
-use super::server_request::AnyRequest;
+use super::server_request::{AnyRequest, AuthState};
 
-pub type ServerResponse = Result<Response<BoxBody<Bytes, hyper::Error>>, ServerError>;
+pub type ServerResponse = Response<BoxBody<Bytes, hyper::Error>>;
+pub type ServerResult = Result<ServerResponse, ServerError>;
+
 
 pub fn empty() -> BoxBody<Bytes, hyper::Error> {
     Empty::<Bytes>::new()
@@ -27,7 +29,7 @@ pub fn send<T: Into<Bytes>>(body: T) -> Response<BoxBody<hyper::body::Bytes, hyp
     Response::new(full(body))
 }
 
-pub fn redirect(path: &str) -> ServerResponse {
+pub fn redirect(path: &str) -> ServerResult {
     let mut res = Response::new(empty());
     let location_val = HeaderValue::from_str(path).map_err(|_| ServerError {
         prefix: "[HEADER ERROR]",
@@ -39,25 +41,25 @@ pub fn redirect(path: &str) -> ServerResponse {
     Ok(res)
 }
 
-pub fn send_status(status: StatusCode) -> ServerResponse {
+pub fn send_status(status: StatusCode) -> ServerResult {
     let mut res = Response::new(empty());
     *res.status_mut() = status;
     Ok(res)
 }
 
-pub fn send_status_and_message(error: ServerError) -> ServerResponse {
+pub fn send_status_and_message(error: ServerError) -> ServerResult {
     let mut res = Response::new(full(error.message));
     *res.status_mut() = error.status_code;
     Ok(res)
 }
 
-pub fn not_found(req: AnyRequest) -> ServerResponse {
+pub fn not_found<Au: AuthState>(req: AnyRequest<Au>) -> ServerResult {
     let page = req.render("404.html", context! {})?;
     let mut res = send(page);
     *res.status_mut() = StatusCode::NOT_FOUND;
     Ok(res)
 }
 
-pub fn ok() -> ServerResponse {
+pub fn ok() -> ServerResult {
     Ok(send("OK".to_string()))
 }

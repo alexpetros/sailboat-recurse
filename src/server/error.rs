@@ -83,6 +83,14 @@ pub fn not_found() -> ServerError {
     }
 }
 
+pub fn forbidden() -> ServerError {
+    ServerError {
+        prefix: "",
+        message: "".to_string(),
+        status_code: StatusCode::FORBIDDEN
+    }
+}
+
 pub fn bad_request(message: &str) -> ServerError {
     ServerError {
         prefix: "[BAD REQUEST]",

@@ -1,6 +1,6 @@
 use crate::server::server_request::SetupRequest;
 use crate::server::server_response::redirect;
-use crate::server::server_response::ServerResponse;
+use crate::server::server_response::ServerResult;
 use openssl::pkey::PKey;
 use openssl::rsa::Rsa;
 use serde::Deserialize;
@@ -29,7 +29,7 @@ static LONG_ACCEPT_HEADER: &str =
     "application/ld+json;profile=“https://www.w3.org/ns/activitystreams";
 static SHORT_ACCEPT_HEADER: &str = "application/activity+json";
 
-pub async fn post(req: SetupRequest<'_>) -> ServerResponse {
+pub async fn post(req: SetupRequest<'_>) -> ServerResult {
     let req = req.to_text().await?;
     let form: NewProfile = req.get_form_data()?;
 

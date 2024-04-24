@@ -8,7 +8,7 @@ use crate::server::error::map_bad_gateway;
 use crate::server::error::not_found;
 use crate::server::server_request::PlainRequest;
 use crate::server::server_response;
-use crate::server::server_response::ServerResponse;
+use crate::server::server_response::ServerResult;
 use rusqlite::Error::QueryReturnedNoRows;
 use rusqlite::Error::SqliteFailure;
 use serde::Deserialize;
@@ -21,7 +21,7 @@ struct Query {
     resource: String,
 }
 
-pub async fn get(req: PlainRequest<'_>) -> ServerResponse {
+pub async fn get(req: PlainRequest<'_>) -> ServerResult {
     let query = req
         .uri()
         .query()
