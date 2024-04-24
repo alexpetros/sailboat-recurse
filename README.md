@@ -12,3 +12,9 @@ Commands:
 * `make test` - Run the test suite
 * `make wtest` - Run the test suite in watch mode
 
+
+## License
+This code is not yet licensed.
+By contributing to it at this stage, you relinquish all copyright to the code that you've written,
+and acknowledge that it will be subject to whichever license I ultimately choose for this project.
+
