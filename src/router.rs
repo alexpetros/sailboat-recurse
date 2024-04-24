@@ -112,7 +112,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
 
         (POST,      ["profiles"]) =>                    (require_setup, profiles::post),
         (GET,       ["profiles", "new"]) =>             (require_setup, profiles::new::get),
-        (GET,       ["profiles", _]) =>                 (require_auth, _profile_id::get),
+        (GET,       ["profiles", _]) =>                 (any, _profile_id::get),
 
         (POST,      ["posts"]) =>                       (require_auth, posts::post),
         (DELETE,    ["posts", ..]) =>                   (require_auth, posts::delete),

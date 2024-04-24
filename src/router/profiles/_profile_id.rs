@@ -3,7 +3,7 @@ use crate::activitypub::objects::Context;
 use crate::queries::get_posts_in_profile;
 use crate::router::profiles::{Profile, LONG_ACCEPT_HEADER, SHORT_ACCEPT_HEADER};
 use crate::server::error::bad_request;
-use crate::server::server_request::AuthedRequest;
+use crate::server::server_request::{AnyRequest, AuthState};
 use crate::server::server_response;
 use crate::server::server_response::{send, send_status, ServerResult};
 use hyper::header::{HeaderValue, ACCEPT, CONTENT_TYPE};
@@ -14,7 +14,7 @@ use tracing::log::debug;
 
 pub mod outbox;
 
-pub async fn get(req: AuthedRequest<'_>) -> ServerResult {
+pub async fn get<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
     let profile_param = req.get_trailing_param("Missing profile ID")?;
 
     let profile_id = match profile_param.split_once("#") {
@@ -57,16 +57,17 @@ pub async fn get(req: AuthedRequest<'_>) -> ServerResult {
         Some(h) => {
             let h = h.to_str().unwrap_or("");
             if h.contains(LONG_ACCEPT_HEADER) || h.contains(SHORT_ACCEPT_HEADER) {
-                debug!("Found JSON header, Serving json profile");
+                debug!("Found JSON header, serving json profile");
                 serve_json_profile(req, profile)
             } else {
+                debug!("Found HTML header, serving HTML profile");
                 serve_html_profile(req, profile).await
             }
         }
     }
 }
 
-async fn serve_html_profile(req: AuthedRequest<'_>, profile: Profile) -> ServerResult {
+async fn serve_html_profile<Au: AuthState>(req: AnyRequest<'_, Au>, profile: Profile) -> ServerResult {
     // let domain = req.domain;
     let posts = get_posts_in_profile(&req.db, profile.profile_id)?;
     let context = context! { profile => profile, posts => posts };
@@ -75,8 +76,14 @@ async fn serve_html_profile(req: AuthedRequest<'_>, profile: Profile) -> ServerR
     Ok(server_response::send(body))
 }
 
-fn serve_json_profile(req: AuthedRequest<'_>, profile: Profile) -> ServerResult {
-    let domain = &req.locals.current_profile.domain;
+fn serve_json_profile<Au: AuthState>(req: AnyRequest<'_, Au>, profile: Profile) -> ServerResult {
+    let domain = req.domain;
+    // let domain = query_row!(
+    //     req.db,
+    //     Domain { domain: String },
+    //     "FROM profiles WHERE profile_id = ?1",
+    //     (profile.profile_id, )
+    //     )?.domain;
 
     let id = format!("https://{}/profiles/{}", domain, profile.profile_id);
     let inbox = format!("https://{}/inbox", domain);

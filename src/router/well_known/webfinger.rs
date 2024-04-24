@@ -56,8 +56,6 @@ pub async fn get(req: PlainRequest<'_>) -> ServerResult {
         [handle]
         );
 
-
-    println!("{:?}", profile);
     let profile = match profile {
         Ok(x) => Ok(x),
         Err(QueryReturnedNoRows) => Err(not_found()),
