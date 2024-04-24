@@ -82,7 +82,8 @@ pub enum AuthStatus<'a, T> {
 pub fn new_request<T>(
     request: hyper::Request<T>,
     global: Arc<GlobalContext>,
-    db: Connection, domain: String
+    db: Connection,
+    domain: String
 ) -> Result<ServerRequest<T, NoAuth>, ServerError> {
     let cookie_string = request
         .headers()

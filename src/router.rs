@@ -42,7 +42,7 @@ macro_rules! routes {
         $req:ident,
         $method_to_match:ident,
         $sub_routes_to_match:ident, {
-            $(($method:ident, $sub_routes:pat) => ($auth_func:ident, $handler:expr)),*
+            $(($method:pat, $sub_routes:pat) => ($auth_func:ident, $handler:expr)),*
             $(,)?
         }
     ) => {
