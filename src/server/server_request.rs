@@ -33,7 +33,7 @@ pub struct CurrentProfile {
 }
 
 #[derive(Serialize)]
-pub struct Locals {
+pub struct AuthData {
     pub profiles: Vec<Profile>,
     pub current_profile: CurrentProfile,
 }
@@ -45,22 +45,22 @@ pub struct Setup {
 }
 
 pub trait AuthState {
-    fn get_locals(&self) -> Option<&Locals>;
+    fn get_locals(&self) -> Option<&AuthData>;
 }
 
 impl AuthState for Setup {
-    fn get_locals(&self) -> Option<&Locals> { None }
+    fn get_locals(&self) -> Option<&AuthData> { None }
 }
 
 impl AuthState for NoAuth {
-    fn get_locals(&self) -> Option<&Locals> { None }
+    fn get_locals(&self) -> Option<&AuthData> { None }
 }
 
-impl AuthState for Locals {
-    fn get_locals(&self) -> Option<&Locals> { Some(self) }
+impl AuthState for AuthData {
+    fn get_locals(&self) -> Option<&AuthData> { Some(self) }
 }
 
-pub type AuthedRequest<'a> = ServerRequest<'a, Incoming, Locals>;
+pub type AuthedRequest<'a> = ServerRequest<'a, Incoming, AuthData>;
 pub type SetupRequest<'a> = ServerRequest<'a, Incoming, Setup>;
 pub type PlainRequest<'a> = ServerRequest<'a, Incoming, NoAuth>;
 pub type AnyRequest<'a, Au> = ServerRequest<'a, Incoming, Au>;
@@ -179,7 +179,7 @@ impl<'a, T> ServerRequest<'a, T, NoAuth> {
 }
 
 impl<'a, T> ServerRequest<'a, T, Setup> {
-    pub fn authenticate(self) -> Result<ServerRequest<'a, T, Locals>, ServerError> {
+    pub fn authenticate(self) -> Result<ServerRequest<'a, T, AuthData>, ServerError> {
         let profiles = {
             let mut query = self.db.prepare("SELECT profile_id, nickname FROM profiles")?;
             let rows = query.query_map((), |row| {
@@ -198,7 +198,7 @@ impl<'a, T> ServerRequest<'a, T, Setup> {
         let db = self.db;
         let domain = self.domain;
         let cookies = self.cookies;
-        let locals = Locals { profiles, current_profile: self.locals.current_profile };
+        let locals = AuthData { profiles, current_profile: self.locals.current_profile };
 
         Ok(ServerRequest { request, global, db, domain, cookies, locals })
     }
