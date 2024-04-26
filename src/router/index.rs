@@ -2,18 +2,20 @@ use minijinja::context;
 
 use crate::queries::get_posts_in_profile;
 use crate::query_row;
-use crate::server::server_request::{AuthedRequest, AuthStatus, PlainRequest};
+use crate::server::server_request::{AuthedRequest, AuthStatus, PlainRequest, SetupStatus};
 use crate::server::server_response::{self, redirect, ServerResult};
 
 pub async fn get<'a>(req: PlainRequest<'a>) -> ServerResult {
-    let req = match req.to_setup() {
+    println!("starting");
+    let req = match req.authenticate() {
         AuthStatus::Success(r) => r,
         AuthStatus::Failure(r) => return get_unauthed(r)
     };
 
-    match req.authenticate() {
-        Ok(r) => get_authed(r).await,
-        Err(_) => redirect("/profiles/new")
+    println!("success");
+    match req.has_passed_setup()? {
+        SetupStatus::Complete(r) => get_authed(r).await,
+        SetupStatus::Incomplete(_) => redirect("/profiles/new")
     }
 }
 

@@ -15,7 +15,7 @@ mod well_known;
 
 use crate::router::well_known::webfinger;
 use crate::server::error::{forbidden, ServerError};
-use crate::server::server_response::ServerResult;
+use crate::server::server_response::{redirect, ServerResult};
 use crate::sqlite::get_conn;
 use feeds::_feed_handle;
 use hyper::body::Incoming;
@@ -28,7 +28,7 @@ use tracing::error;
 use tracing::warn;
 
 use crate::server::context::GlobalContext;
-use crate::server::server_request::{AuthedRequest, AuthStatus, new_request, PlainRequest, SetupRequest};
+use crate::server::server_request::{new_request, AuthStatus, AuthedRequest, PlainRequest, SetupRequest, SetupStatus};
 use crate::server::server_response;
 
 pub const GET: &Method = &Method::GET;
@@ -36,6 +36,11 @@ pub const POST: &Method = &Method::POST;
 pub const DELETE: &Method = &Method::DELETE;
 
 const DEFAULT_DB: &str = "./sailboat.db";
+
+pub enum MiddlewareResult<T> {
+    Continue(T),
+    Finish(ServerResult)
+}
 
 macro_rules! routes {
     (
@@ -49,7 +54,10 @@ macro_rules! routes {
         match (&$method_to_match, $sub_routes_to_match) {
             $(
                 ($method, $sub_routes) => {
-                    let req = $auth_func($req)?;
+                    let req = match $auth_func($req) {
+                        MiddlewareResult::Continue(r) => r,
+                        MiddlewareResult::Finish(e) => return e
+                    };
                     $handler(req).await
                 }
             )*
@@ -106,20 +114,20 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
         (POST,      ["login"]) =>                       (any, login::post),
         (GET,       ["logout"]) =>                      (any, logout::get),
 
-        (GET,       ["feeds", _]) =>                    (require_auth, _feed_handle::get),
-        (POST,      ["follow"]) =>                      (require_auth, follow::post),
-        (GET,       ["following"]) =>                   (require_auth, following::get),
+        (GET,       ["feeds", _]) =>                    (require_full_setup, _feed_handle::get),
+        (POST,      ["follow"]) =>                      (require_full_setup, follow::post),
+        (GET,       ["following"]) =>                   (require_full_setup, following::get),
 
-        (POST,      ["profiles"]) =>                    (require_setup, profiles::post),
-        (GET,       ["profiles", "new"]) =>             (require_setup, profiles::new::get),
+        (POST,      ["profiles"]) =>                    (require_authentication, profiles::post),
+        (GET,       ["profiles", "new"]) =>             (require_authentication, profiles::new::get),
         (GET,       ["profiles", _]) =>                 (any, _profile_id::get),
 
-        (POST,      ["posts"]) =>                       (require_auth, posts::post),
-        (DELETE,    ["posts", ..]) =>                   (require_auth, posts::delete),
+        (POST,      ["posts"]) =>                       (require_full_setup, posts::post),
+        (DELETE,    ["posts", ..]) =>                   (require_full_setup, posts::delete),
 
         (GET,       ["switch", _]) =>                   (any, switch::get),
-        (GET,       ["search", ..]) =>                  (require_auth, search::get),
-        (POST,      ["search", ..]) =>                  (require_auth, search::post),
+        (GET,       ["search", ..]) =>                  (require_full_setup, search::get),
+        (POST,      ["search", ..]) =>                  (require_full_setup, search::post),
 
         (GET,       [".well-known", "webfinger"]) =>    (any, webfinger::get),
 
@@ -128,22 +136,34 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
     })
 }
 
-fn any(req: PlainRequest) -> Result<PlainRequest, ServerError> {
-    Ok(req)
+fn any(req: PlainRequest) -> MiddlewareResult<PlainRequest> {
+    MiddlewareResult::Continue(req)
 }
 
-fn require_auth(req: PlainRequest) -> Result<AuthedRequest, ServerError> {
-    let req = require_setup(req)?;
-    req.authenticate()
-}
-
-fn require_setup(req: PlainRequest) -> Result<SetupRequest, ServerError> {
-    let req = req.to_setup();
+fn require_full_setup(req: PlainRequest) -> MiddlewareResult<AuthedRequest> {
+    let req = require_authentication(req);
     let req = match req {
-        AuthStatus::Success(r) => r,
-        AuthStatus::Failure(_) => return Err(forbidden())
+        MiddlewareResult::Continue(r) => r,
+        MiddlewareResult::Finish(e) => return MiddlewareResult::Finish(e)
     };
-    Ok(req)
+
+    let req = match req.has_passed_setup() {
+        Ok(r) => r,
+        Err(e) => return MiddlewareResult::Finish(Err(e))
+    };
+
+    match req {
+        SetupStatus::Complete(r) => MiddlewareResult::Continue(r),
+        SetupStatus::Incomplete(_) => MiddlewareResult::Finish(redirect("/profiles/new"))
+    }
+}
+
+fn require_authentication(req: PlainRequest) -> MiddlewareResult<SetupRequest> {
+    let req = req.authenticate();
+    match req {
+        AuthStatus::Success(r) => MiddlewareResult::Continue(r),
+        AuthStatus::Failure(_) => MiddlewareResult::Finish(Err(forbidden()))
+    }
 }
 
 fn log_warn_and_send_specific_message(err: ServerError) -> ServerResult {

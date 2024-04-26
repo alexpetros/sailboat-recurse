@@ -25,7 +25,7 @@ pub struct Profile {
     pub nickname: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct CurrentProfile {
     pub profile_id: i64,
     pub domain: String,
@@ -39,16 +39,13 @@ pub struct AuthData {
 }
 
 pub struct NoAuth;
-
-pub struct Setup {
-    pub current_profile: CurrentProfile,
-}
+pub struct SetupPhase;
 
 pub trait AuthState {
     fn get_locals(&self) -> Option<&AuthData>;
 }
 
-impl AuthState for Setup {
+impl AuthState for SetupPhase {
     fn get_locals(&self) -> Option<&AuthData> { None }
 }
 
@@ -61,7 +58,7 @@ impl AuthState for AuthData {
 }
 
 pub type AuthedRequest<'a> = ServerRequest<'a, Incoming, AuthData>;
-pub type SetupRequest<'a> = ServerRequest<'a, Incoming, Setup>;
+pub type SetupRequest<'a> = ServerRequest<'a, Incoming, SetupPhase>;
 pub type PlainRequest<'a> = ServerRequest<'a, Incoming, NoAuth>;
 pub type AnyRequest<'a, Au> = ServerRequest<'a, Incoming, Au>;
 
@@ -75,8 +72,13 @@ pub struct ServerRequest<'a, T, Au: AuthState> {
 }
 
 pub enum AuthStatus<'a, T> {
-    Success(ServerRequest<'a, T, Setup>),
+    Success(ServerRequest<'a, T, SetupPhase>),
     Failure(ServerRequest<'a, T, NoAuth>),
+}
+
+pub enum SetupStatus<'a, T> {
+    Complete(ServerRequest<'a, T, AuthData>),
+    Incomplete(ServerRequest<'a, T, SetupPhase>),
 }
 
 pub fn new_request<T>(
@@ -144,7 +146,7 @@ impl<'a, T, Au: AuthState> Deref for ServerRequest<'a, T, Au> {
 }
 
 impl<'a, T> ServerRequest<'a, T, NoAuth> {
-    pub fn to_setup(self) -> AuthStatus<'a, T> {
+    pub fn authenticate(self) -> AuthStatus<'a, T> {
         let cookie_token = match self.cookies.get("token") {
             Some(token) => token,
             None => return AuthStatus::Failure(self)
@@ -161,25 +163,19 @@ impl<'a, T> ServerRequest<'a, T, NoAuth> {
             return AuthStatus::Failure(self)
         }
 
-        let current_profile = get_current_profile(&self.db, &self.cookies, &self.domain);
-        let current_profile = match current_profile {
-            Some(p) => p,
-            None => return AuthStatus::Failure(self)
-        };
-
         let request = self.request;
         let global = self.global;
         let db = self.db;
         let domain = self.domain;
         let cookies = self.cookies;
-        let locals = Setup { current_profile };
+        let locals = SetupPhase;
 
         AuthStatus::Success(ServerRequest { request, global, db, domain, cookies, locals })
     }
 }
 
-impl<'a, T> ServerRequest<'a, T, Setup> {
-    pub fn authenticate(self) -> Result<ServerRequest<'a, T, AuthData>, ServerError> {
+impl<'a, T> ServerRequest<'a, T, SetupPhase> {
+    pub fn has_passed_setup(self) -> Result<SetupStatus<'a, T>, ServerError> {
         let profiles = {
             let mut query = self.db.prepare("SELECT profile_id, nickname FROM profiles")?;
             let rows = query.query_map((), |row| {
@@ -198,9 +194,20 @@ impl<'a, T> ServerRequest<'a, T, Setup> {
         let db = self.db;
         let domain = self.domain;
         let cookies = self.cookies;
-        let locals = AuthData { profiles, current_profile: self.locals.current_profile };
 
-        Ok(ServerRequest { request, global, db, domain, cookies, locals })
+        let current_profile = get_current_profile(&db, &cookies, &domain);
+        let current_profile = match current_profile {
+            Some(p) => p,
+            None => {
+                let req = ServerRequest { request, global, db, domain, cookies, locals: SetupPhase };
+                return Ok(SetupStatus::Incomplete(req))
+            }
+        };
+
+        let locals = AuthData { profiles, current_profile };
+
+        let req = ServerRequest { request, global, db, domain, cookies, locals };
+        Ok(SetupStatus::Complete(req))
     }
 }
 
@@ -262,7 +269,16 @@ pub fn get_current_profile(db: &Connection, cookies: &HashMap<String, String>, d
     let current_profile_id = cookies
         .get("current_profile")
         .map(|id| id.parse::<i64>().ok())
-        .flatten()?;
+        .flatten();
+
+    let current_profile_id: i64 = match current_profile_id {
+        Some(p) => Some(p),
+        None => {
+            db.query_row("SELECT profile_id FROM profiles", (), |row| {
+                Ok(row.get(0)?)
+            }).ok()
+        }
+    }?;
 
     let private_key_pem: String = db.query_row(
         "SELECT private_key_pem FROM profiles WHERE profile_id = ?1",
