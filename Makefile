@@ -17,14 +17,14 @@ $(DEBUG_BUILD):
 release:
 	cargo run --release
 
+.PHONY: check
+check:
+	cargo watch $(WATCH_FLAGS) -s 'cargo check'
+
 .PHONY: test
 test:
 	cargo test
 	@./test/integration/run-integration-tests.sh
-
-.PHONY: wcheck
-wcheck:
-	cargo watch $(WATCH_FLAGS) -s 'cargo check'
 
 .PHONY: wtest
 wtest:

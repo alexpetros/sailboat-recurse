@@ -16,8 +16,6 @@ use tracing::log::warn;
 use super::error::{body_not_utf8, body_too_large};
 
 const ENV: &str = if cfg!(debug_assertions) { "debug" } else { "prod" };
-// TODO this wouldn't work if you deleted for your first profile
-// const DEFAULT_PROFILE: i64 = 1;
 
 #[derive(Serialize)]
 pub struct Profile {
@@ -32,29 +30,29 @@ pub struct CurrentProfile {
     #[serde(skip)] pub pkey: PKey<Private>,
 }
 
+pub struct NoAuth;
+pub struct SetupPhase;
+
 #[derive(Serialize)]
 pub struct AuthData {
     pub profiles: Vec<Profile>,
     pub current_profile: CurrentProfile,
 }
 
-pub struct NoAuth;
-pub struct SetupPhase;
-
 pub trait AuthState {
-    fn get_locals(&self) -> Option<&AuthData>;
+    fn get(&self) -> Option<&AuthData>;
 }
 
 impl AuthState for SetupPhase {
-    fn get_locals(&self) -> Option<&AuthData> { None }
+    fn get(&self) -> Option<&AuthData> { None }
 }
 
 impl AuthState for NoAuth {
-    fn get_locals(&self) -> Option<&AuthData> { None }
+    fn get(&self) -> Option<&AuthData> { None }
 }
 
 impl AuthState for AuthData {
-    fn get_locals(&self) -> Option<&AuthData> { Some(self) }
+    fn get(&self) -> Option<&AuthData> { Some(self) }
 }
 
 pub type AuthedRequest<'a> = ServerRequest<'a, Incoming, AuthData>;
@@ -67,18 +65,8 @@ pub struct ServerRequest<'a, T, Au: AuthState> {
     pub global: Arc<GlobalContext<'a>>,
     pub db: Connection,
     pub cookies: HashMap<String, String>,
-    pub locals: Au,
+    pub data: Au,
     pub domain: String,
-}
-
-pub enum AuthStatus<'a, T> {
-    Success(ServerRequest<'a, T, SetupPhase>),
-    Failure(ServerRequest<'a, T, NoAuth>),
-}
-
-pub enum SetupStatus<'a, T> {
-    Complete(ServerRequest<'a, T, AuthData>),
-    Incomplete(ServerRequest<'a, T, SetupPhase>),
 }
 
 pub fn new_request<T>(
@@ -101,7 +89,7 @@ pub fn new_request<T>(
         .map(|(key, value)| (key.to_owned(), value.to_owned()))
         .collect::<HashMap<String, String>>();
 
-    Ok(ServerRequest { request, global, db, domain, cookies, locals: NoAuth })
+    Ok(ServerRequest { request, global, db, domain, cookies, data: NoAuth })
 }
 
 impl<'a, T, Au: AuthState> ServerRequest<'a, T, Au> {
@@ -115,7 +103,7 @@ impl<'a, T, Au: AuthState> ServerRequest<'a, T, Au> {
 
     fn make_context(&self, local_values: Value) -> Value {
         let global_values = context! { env => ENV };
-        if let Some(locals) = self.locals.get_locals() {
+        if let Some(locals) = self.data.get() {
             let request_values = context! { profiles => locals.profiles };
             context! { ..local_values, ..request_values, ..global_values }
         } else {
@@ -145,6 +133,11 @@ impl<'a, T, Au: AuthState> Deref for ServerRequest<'a, T, Au> {
     }
 }
 
+pub enum AuthStatus<'a, T> {
+    Success(ServerRequest<'a, T, SetupPhase>),
+    Failure(ServerRequest<'a, T, NoAuth>),
+}
+
 impl<'a, T> ServerRequest<'a, T, NoAuth> {
     pub fn authenticate(self) -> AuthStatus<'a, T> {
         let cookie_token = match self.cookies.get("token") {
@@ -168,10 +161,15 @@ impl<'a, T> ServerRequest<'a, T, NoAuth> {
         let db = self.db;
         let domain = self.domain;
         let cookies = self.cookies;
-        let locals = SetupPhase;
+        let data = SetupPhase;
 
-        AuthStatus::Success(ServerRequest { request, global, db, domain, cookies, locals })
+        AuthStatus::Success(ServerRequest { request, global, db, domain, cookies, data })
     }
+}
+
+pub enum SetupStatus<'a, T> {
+    Complete(ServerRequest<'a, T, AuthData>),
+    Incomplete(ServerRequest<'a, T, SetupPhase>),
 }
 
 impl<'a, T> ServerRequest<'a, T, SetupPhase> {
@@ -199,14 +197,14 @@ impl<'a, T> ServerRequest<'a, T, SetupPhase> {
         let current_profile = match current_profile {
             Some(p) => p,
             None => {
-                let req = ServerRequest { request, global, db, domain, cookies, locals: SetupPhase };
+                let req = ServerRequest { request, global, db, domain, cookies, data: SetupPhase };
                 return Ok(SetupStatus::Incomplete(req))
             }
         };
 
-        let locals = AuthData { profiles, current_profile };
+        let data = AuthData { profiles, current_profile };
 
-        let req = ServerRequest { request, global, db, domain, cookies, locals };
+        let req = ServerRequest { request, global, db, domain, cookies, data };
         Ok(SetupStatus::Complete(req))
     }
 }
@@ -227,9 +225,9 @@ impl<'a, Au: AuthState> ServerRequest<'a, Incoming, Au> {
         let db = self.db;
         let domain = self.domain;
         let cookies = self.cookies;
-        let locals = self.locals;
+        let data = self.data;
 
-        Ok(ServerRequest { request, global, db, domain, cookies, locals })
+        Ok(ServerRequest { request, global, db, domain, cookies, data })
     }
 
     pub async fn to_text(self) -> Result<ServerRequest<'a, String, Au>, ServerError> {
@@ -249,9 +247,9 @@ impl<'a, Au: AuthState> ServerRequest<'a, Bytes, Au> {
         let db = self.db;
         let domain = self.domain;
         let cookies = self.cookies;
-        let locals = self.locals;
+        let data = self.data;
 
-        Ok(ServerRequest { request, global, db, domain, cookies, locals })
+        Ok(ServerRequest { request, global, db, domain, cookies, data })
     }
 }
 

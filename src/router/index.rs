@@ -25,7 +25,7 @@ pub fn get_unauthed(req: PlainRequest) -> ServerResult {
 }
 
 pub async fn get_authed(req: AuthedRequest<'_>) -> ServerResult {
-    let posts = get_posts_in_profile(&req.db, req.locals.current_profile.profile_id)?;
+    let posts = get_posts_in_profile(&req.db, req.data.current_profile.profile_id)?;
     let mut query = req.db.prepare("SELECT count(*) FROM followed_actors")?;
     let follow_count: i64 = query.query_row((), |row| row.get(0))?;
 
@@ -38,7 +38,7 @@ pub async fn get_authed(req: AuthedRequest<'_>) -> ServerResult {
             nickname: String
         },
         "FROM profiles where profile_id = ?1",
-        [req.locals.current_profile.profile_id]
+        [req.data.current_profile.profile_id]
     );
 
     let profile = match profile {
