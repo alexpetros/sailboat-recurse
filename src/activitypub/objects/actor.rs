@@ -60,7 +60,7 @@ pub struct Actor {
 // Maybe try and PR that?
 impl From<Actor> for minijinja::Value {
     fn from(value: Actor) -> Self {
-        Value::from_serializable(&value)
+        Value::from_serialize(value)
     }
 }
 
