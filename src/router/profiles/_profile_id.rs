@@ -4,10 +4,9 @@ use crate::queries::get_posts_in_profile;
 use crate::router::profiles::{Profile, LONG_ACCEPT_HEADER, SHORT_ACCEPT_HEADER};
 use crate::server::error::bad_request;
 use crate::server::server_request::{AnyRequest, AuthState};
-use crate::server::server_response;
-use crate::server::server_response::{send, send_status, ServerResult};
+use crate::server::server_response::{self, not_found};
+use crate::server::server_response::{send, ServerResult};
 use hyper::header::{HeaderValue, ACCEPT, CONTENT_TYPE};
-use hyper::StatusCode;
 use minijinja::context;
 use serde_json::json;
 use tracing::log::debug;
@@ -43,7 +42,7 @@ pub async fn get<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
 
     let profile = match profile {
         Ok(x) => x,
-        Err(_) => return send_status(StatusCode::NOT_FOUND),
+        Err(_) => return not_found(req)
     };
 
     // If no request header was provided, serve the HTML profile
