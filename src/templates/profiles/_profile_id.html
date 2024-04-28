@@ -8,8 +8,8 @@
 
 <section class=card>
 <h1>{{ profile.display_name }}</h1>
-<div><a href="/profiles/{{profile.profile_id}}">@{{ profile.preferred_username }}</a></div>
-  Following: <a href="/following">{{ follow_count }}</a>
+<div><a href="/profiles/{{ profile.profile_id }}">@{{ profile.preferred_username }}</a></div>
+Following: <a href="/profiles/{{ profile.profile_id }}/following">{{ follow_count }}</a>
 </section>
 
 {% block profile %}

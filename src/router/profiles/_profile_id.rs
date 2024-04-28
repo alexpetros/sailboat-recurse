@@ -12,6 +12,7 @@ use serde_json::json;
 use tracing::log::debug;
 
 pub mod outbox;
+pub mod following;
 
 pub async fn get<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
     let profile_param = req.get_trailing_param("Missing profile ID")?;
@@ -69,7 +70,13 @@ pub async fn get<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
 async fn serve_html_profile<Au: AuthState>(req: AnyRequest<'_, Au>, profile: Profile) -> ServerResult {
     // let domain = req.domain;
     let posts = get_posts_in_profile(&req.db, profile.profile_id)?;
-    let context = context! { profile => profile, posts => posts };
+    let follow_count: i64 = req.db.query_row(
+        "SELECT count(*) FROM followed_actors WHERE profile_id = ?1",
+        [profile.profile_id],
+        |row| row.get(0)
+    )?;
+
+    let context = context! { profile => profile, posts => posts, follow_count };
 
     let body = req.render("profiles/_profile_id.html", context)?;
     Ok(server_response::send(body))

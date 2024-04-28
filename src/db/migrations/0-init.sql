@@ -1,10 +1,3 @@
-CREATE TABLE posts (
-  post_id INTEGER PRIMARY KEY,
-  profile_id INTEGER NOT NULL REFERENCES profiles ON DELETE CASCADE ON UPDATE CASCADE,
-  content TEXT,
-  created_at TEXT NOT NULL DEFAULT (strftime('%FT%TZ', CURRENT_TIMESTAMP))
-) STRICT;
-
 CREATE TABLE profiles (
   profile_id INTEGER PRIMARY KEY,
   display_name TEXT NOT NULL,
@@ -13,8 +6,16 @@ CREATE TABLE profiles (
   private_key_pem TEXT NOT NULL
 ) STRICT;
 
+CREATE TABLE posts (
+  post_id INTEGER PRIMARY KEY,
+  profile_id INTEGER NOT NULL REFERENCES profiles ON DELETE CASCADE ON UPDATE CASCADE,
+  content TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%FT%TZ', CURRENT_TIMESTAMP))
+) STRICT;
+
 CREATE TABLE followed_actors (
   followed_actor_id INTEGER PRIMARY key,
+  profile_id INTEGER NOT NULL REFERENCES profiles ON DELETE CASCADE ON UPDATE CASCADE,
   name TEXT NOT NULL,
   preferred_username TEXT NOT NULL,
   host TEXT NOT NULL,

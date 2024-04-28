@@ -93,6 +93,14 @@ pub fn new_request<T>(
 }
 
 impl<'a, T, Au: AuthState> ServerRequest<'a, T, Au> {
+    pub fn get_url_param(&self, pos: usize, message: &str) -> Result<&str, ServerError> {
+        self.uri()
+            .path()
+            .split("/")
+            .nth(pos)
+            .ok_or(error::bad_request(message))
+    }
+
     pub fn get_trailing_param(&self, message: &str) -> Result<&str, ServerError> {
         self.uri()
             .path()
