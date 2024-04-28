@@ -97,13 +97,13 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
     }
 
     // Remove the query parameter for routing purposes
-    let without_query = match req.uri().path().split_once("?") {
+    let without_query = match req.uri().path().split_once('?') {
         None => req.uri().path().to_owned(),
         Some(x) => x.0.to_owned(),
     };
 
     // Split into sub-routes
-    let sub_routes: Vec<&str> = without_query.split("/").collect();
+    let sub_routes: Vec<&str> = without_query.split('/').collect();
     let sub_routes = &sub_routes[1..];
     let method = req.method().clone();
 

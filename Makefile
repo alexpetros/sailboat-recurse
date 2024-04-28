@@ -6,6 +6,7 @@ DB_NAME = ./sailboat.db
 ngrok:
 	@./scripts/start-with-ngrok.sh
 
+.PHONY: all
 all: $(DEBUG_BUILD)
 	cargo watch $(WATCH_FLAGS) -x run
 
@@ -38,7 +39,3 @@ delete-db:
 reset-db:
 	rm -f $(DB_NAME)*
 	cat ./src/db/migrations/0-init.sql | sqlite3 $(DB_NAME)
-
-.PHONY: check
-check:
-	cargo check

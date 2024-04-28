@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Sailboat</title>
+{% endblock %}
+
+{% block main %}
+
+<section class=card>
+<h1>{{ profile.display_name }}</h1>
+<div><a href="/profiles/{{profile.profile_id}}">@{{ profile.preferred_username }}</a></div>
+  Following: <a href="/following">{{ follow_count }}</a>
+</section>
+
+{% block profile %}
+<section class=feed>
+<h2>profile</h2>
+{% for post in posts %}
+  {% include '_partials/post.html' %}
+{% endfor %}
+</section>
+{% endblock %}
+
+{% endblock %}
+

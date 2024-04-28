@@ -17,7 +17,7 @@ pub mod outbox;
 pub async fn get<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
     let profile_param = req.get_trailing_param("Missing profile ID")?;
 
-    let profile_id = match profile_param.split_once("#") {
+    let profile_id = match profile_param.split_once('#') {
         None => profile_param,
         Some((f, _)) => f,
     }
@@ -72,7 +72,7 @@ async fn serve_html_profile<Au: AuthState>(req: AnyRequest<'_, Au>, profile: Pro
     let posts = get_posts_in_profile(&req.db, profile.profile_id)?;
     let context = context! { profile => profile, posts => posts };
 
-    let body = req.render("profile.html", context)?;
+    let body = req.render("profiles/_profile_id.html", context)?;
     Ok(server_response::send(body))
 }
 
@@ -90,9 +90,7 @@ fn serve_json_profile<Au: AuthState>(req: AnyRequest<'_, Au>, profile: Profile) 
     let outbox = format!("https://{}/profiles/{}/outbox", domain, profile.profile_id);
     let public_key = PublicKey::new(&id, &profile.private_key_pem);
 
-    let mut context = Vec::new();
-    context.push(Context::ActivityStreams);
-    context.push(Context::SecurityV1);
+    let context = vec![Context::ActivityStreams, Context::SecurityV1];
     let actor = Actor {
         context,
         id: id.to_owned(),

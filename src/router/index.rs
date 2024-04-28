@@ -5,14 +5,12 @@ use crate::query_row;
 use crate::server::server_request::{AuthedRequest, AuthStatus, PlainRequest, SetupStatus};
 use crate::server::server_response::{self, redirect, ServerResult};
 
-pub async fn get<'a>(req: PlainRequest<'a>) -> ServerResult {
-    println!("starting");
+pub async fn get(req: PlainRequest<'_>) -> ServerResult {
     let req = match req.authenticate() {
         AuthStatus::Success(r) => r,
         AuthStatus::Failure(r) => return get_unauthed(r)
     };
 
-    println!("success");
     match req.has_passed_setup()? {
         SetupStatus::Complete(r) => get_authed(r).await,
         SetupStatus::Incomplete(_) => redirect("/profiles/new")

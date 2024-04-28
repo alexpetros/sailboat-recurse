@@ -6,10 +6,6 @@
 
 {% block main %}
 <style>
-h1, h2 {
-  margin: 0;
-}
-
 .newpost {
   background-color: rgb(244, 244, 244);
 }
@@ -41,7 +37,7 @@ h1, h2 {
 
 <section class=card>
 <h1>{{ profile.display_name }}</h1>
-<div>@{{ profile.preferred_username }}</div>
+<div><a href="/profiles/{{profile.profile_id}}">@{{ profile.preferred_username }}</a></div>
   Following: <a href="/following">{{ follow_count }}</a>
 </section>
 
