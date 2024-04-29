@@ -25,10 +25,6 @@ struct NewProfile {
     nickname: String,
 }
 
-static LONG_ACCEPT_HEADER: &str =
-    "application/ld+json;profile=“https://www.w3.org/ns/activitystreams";
-static SHORT_ACCEPT_HEADER: &str = "application/activity+json";
-
 pub async fn post(req: SetupRequest<'_>) -> ServerResult {
     let req = req.into_text().await?;
     let form: NewProfile = req.get_form_data()?;

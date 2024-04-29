@@ -3,7 +3,7 @@ use crate::server::error;
 use crate::server::error::{map_bad_gateway, map_bad_request, ServerError};
 use http_body_util::BodyExt;
 use hyper::body::{Bytes, Incoming};
-use hyper::header::COOKIE;
+use hyper::header::{ACCEPT, COOKIE};
 use minijinja::{context, Value};
 use openssl::pkey::{PKey, Private};
 use rusqlite::{Connection, OptionalExtension};
@@ -12,6 +12,9 @@ use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::Arc;
 use tracing::log::warn;
+
+static LONG_ACCEPT_HEADER: &str = "application/ld+json;profile=“https://www.w3.org/ns/activitystreams";
+static SHORT_ACCEPT_HEADER: &str = "application/activity+json";
 
 use super::error::{body_not_utf8, body_too_large};
 
@@ -124,6 +127,19 @@ impl<'a, T, Au: AuthState> ServerRequest<'a, T, Au> {
         tmpl.render(context)
             .map(|x| x.into_bytes())
             .map_err(map_bad_gateway)
+    }
+
+    // Check whether the header is asking for (AcvitiyPub) JSON
+    // TODO actually parse the header properly
+    pub fn is_ap_req(&self) -> bool {
+        let request_header = self.headers().get(ACCEPT);
+        match request_header {
+            None => false,
+            Some(h) => {
+                let h = h.to_str().unwrap_or("");
+                h.contains(LONG_ACCEPT_HEADER) || h.contains(SHORT_ACCEPT_HEADER)
+            }
+        }
     }
 
 // pub fn render_block(&self, path: &str, block_name: &str, local_values: Value) -> Vec<u8> {

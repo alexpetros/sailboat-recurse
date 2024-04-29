@@ -1,15 +1,14 @@
 use crate::activitypub::objects::actor::{Actor, ActorType, PublicKey};
 use crate::activitypub::objects::Context;
 use crate::queries::get_posts_in_profile;
-use crate::router::profiles::{Profile, LONG_ACCEPT_HEADER, SHORT_ACCEPT_HEADER};
+use crate::router::profiles::Profile;
 use crate::server::error::bad_request;
 use crate::server::server_request::{AnyRequest, AuthState};
 use crate::server::server_response::{self, not_found};
 use crate::server::server_response::{send, ServerResult};
-use hyper::header::{HeaderValue, ACCEPT, CONTENT_TYPE};
+use hyper::header::{HeaderValue, CONTENT_TYPE};
 use minijinja::context;
 use serde_json::json;
-use tracing::log::debug;
 
 pub mod outbox;
 pub mod following;
@@ -46,25 +45,12 @@ pub async fn get<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
         Err(_) => return not_found(req)
     };
 
-    // If no request header was provided, serve the HTML profile
-    let request_header = req.headers().get(ACCEPT);
-
-    // If a valid request header was provided and contains the correct accept value,
-    // serve the JSON representation of the profile
-    // TODO actually parse the header properly
-    match request_header {
-        None => serve_html_profile(req, profile).await,
-        Some(h) => {
-            let h = h.to_str().unwrap_or("");
-            if h.contains(LONG_ACCEPT_HEADER) || h.contains(SHORT_ACCEPT_HEADER) {
-                debug!("Found JSON header, serving json profile");
-                serve_json_profile(req, profile)
-            } else {
-                debug!("Found HTML header, serving HTML profile");
-                serve_html_profile(req, profile).await
-            }
-        }
+    if req.is_ap_req() {
+        serve_json_profile(req, profile)
+    } else {
+        serve_html_profile(req, profile).await
     }
+
 }
 
 async fn serve_html_profile<Au: AuthState>(req: AnyRequest<'_, Au>, profile: Profile) -> ServerResult {
