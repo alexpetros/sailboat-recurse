@@ -31,7 +31,7 @@ pub async fn get(req: PlainRequest<'_>) -> ServerResult {
         .map(|q| q.resource)
         .map_err(|_| bad_request("Invalid query string provided"))?;
 
-    let (search_type, identifier) = resource.split_once(":").ok_or_else(|| {
+    let (search_type, identifier) = resource.split_once(':').ok_or_else(|| {
         bad_request("Invalid resource query provided (missing scheme i.e. 'acct:')")
     })?;
 
@@ -44,7 +44,7 @@ pub async fn get(req: PlainRequest<'_>) -> ServerResult {
 
     // TODO check the domain
     let (handle, domain) = identifier
-        .split_once("@")
+        .split_once('@')
         .ok_or_else(|| bad_request("Invalid handle resource provided"))?;
 
     debug!("Searching for user {} {}", handle, domain);
@@ -73,9 +73,7 @@ pub async fn get(req: PlainRequest<'_>) -> ServerResult {
         )),
     };
 
-    let mut links = Vec::new();
-    links.push(self_link);
-
+    let links = vec![self_link];
     let actor = WebFinger {
         subject: Some(format!("acct:{}@{}", handle, domain)),
         aliases: None,

@@ -26,6 +26,9 @@ pub struct OrderedCollectionPage {
     #[serde(rename = "orderedItems")]
     pub ordered_items: Vec<Activity>,
 }
+
+// type OutboxPage = OrderedCollectionPage;
+
 // https://www.w3.org/TR/activitystreams-core/#collection
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Outbox {
@@ -116,3 +119,7 @@ pub fn get_outbox(db: &Connection, profile_id: i64, domain: &str) -> InternalRes
 
     Ok(outbox)
 }
+
+// pub fn get_outbox_page(db: &Connection, profile_id: i64, domain: &str, page_num: usize) -> InternalResult<OutboxPage> {
+//     let posts = db.prepare()
+// }

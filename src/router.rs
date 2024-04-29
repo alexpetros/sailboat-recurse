@@ -124,6 +124,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
         (GET,       ["profiles", _, "outbox"]) =>       (any, outbox::get),
 
         (POST,      ["posts"]) =>                       (require_full_setup, posts::post),
+        (GET,       ["posts", ..]) =>                   (any, posts::get),
         (DELETE,    ["posts", ..]) =>                   (require_full_setup, posts::delete),
 
         (GET,       ["switch", _]) =>                   (any, switch::get),

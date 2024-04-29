@@ -1,6 +1,7 @@
+use crate::{query_row, query_row_custom};
 use crate::server::error;
 use crate::server::error::body_not_utf8;
-use crate::server::server_request::AuthedRequest;
+use crate::server::server_request::{AnyRequest, AuthState, AuthedRequest};
 use crate::server::server_response::{send, ServerResult};
 use crate::templates::_partials::post::Post;
 use minijinja::context;
@@ -13,12 +14,40 @@ struct PostForm {
     content: String,
 }
 
+pub async fn get<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
+    let post_id = req
+        .uri()
+        .path()
+        .split('/')
+        .nth(2)
+        .ok_or(error::bad_request("Missing post ID"))?;
+
+    let post = query_row_custom!(
+        req.db,
+        Post {
+            post_id: i64,
+            content: String,
+            created_at: String,
+            display_name: String,
+            preferred_username: String
+        },
+        "
+        SELECT post_id, content, created_at, display_name, preferred_username
+        FROM posts
+        LEFT JOIN profiles USING (profile_id)
+        WHERE post_id = ?1
+        ",
+        [post_id])?;
+
+    let body = req.render("_partials/post.html", context! { post })?;
+    Ok(send(body))
+}
+
 pub async fn post(req: AuthedRequest<'_>) -> ServerResult {
     let req = req.to_text().await?;
     let form: PostForm = req.get_form_data()?;
     let profile_id: i64 = form.profile_id.parse().map_err(|_| body_not_utf8())?;
 
-    // Not sure why sqlite isn't doing this automatically, the way it should
     req.db.execute(
         "INSERT INTO posts (profile_id, content) VALUES (?1, ?2)",
         (&profile_id, &form.content),
@@ -56,7 +85,7 @@ pub async fn delete(req: AuthedRequest<'_>) -> ServerResult {
         .path()
         .split('/')
         .nth(2)
-        .ok_or(error::bad_request("Missing ID"))?;
+        .ok_or(error::bad_request("Missing post ID"))?;
 
     debug!("Deleting post {}", post_param);
     req.db
