@@ -30,7 +30,7 @@ static LONG_ACCEPT_HEADER: &str =
 static SHORT_ACCEPT_HEADER: &str = "application/activity+json";
 
 pub async fn post(req: SetupRequest<'_>) -> ServerResult {
-    let req = req.to_text().await?;
+    let req = req.into_text().await?;
     let form: NewProfile = req.get_form_data()?;
 
     // TODO encrypt this

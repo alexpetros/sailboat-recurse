@@ -1,4 +1,4 @@
-use crate::{query_row, query_row_custom};
+use crate::query_row_custom;
 use crate::server::error;
 use crate::server::error::body_not_utf8;
 use crate::server::server_request::{AnyRequest, AuthState, AuthedRequest};
@@ -44,7 +44,7 @@ pub async fn get<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
 }
 
 pub async fn post(req: AuthedRequest<'_>) -> ServerResult {
-    let req = req.to_text().await?;
+    let req = req.into_text().await?;
     let form: PostForm = req.get_form_data()?;
     let profile_id: i64 = form.profile_id.parse().map_err(|_| body_not_utf8())?;
 

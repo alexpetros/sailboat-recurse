@@ -17,7 +17,7 @@ struct FormData {
 }
 
 pub async fn post(req: PlainRequest<'_>) -> ServerResult {
-    let req = req.to_text().await?;
+    let req = req.into_text().await?;
     let form: FormData = req.get_form_data()?;
     let _pass = form.password;
     let token: String = thread_rng()

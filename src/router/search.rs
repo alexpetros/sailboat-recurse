@@ -18,7 +18,7 @@ pub async fn get(req: AuthedRequest<'_>) -> ServerResult {
 }
 
 pub async fn post(req: AuthedRequest<'_>) -> ServerResult {
-    let req = req.to_text().await?;
+    let req = req.into_text().await?;
     let query: Query = req.get_form_data()?;
     let handle = get_full_handle(&query.q)?;
 

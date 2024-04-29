@@ -13,7 +13,7 @@ struct Actor {
 }
 
 pub async fn post(req: AuthedRequest<'_>) -> ServerResult {
-    let req = req.to_text().await?;
+    let req = req.into_text().await?;
     let form: Actor = req.get_form_data()?;
 
     req.db.execute(

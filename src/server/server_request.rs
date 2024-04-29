@@ -78,14 +78,13 @@ pub fn new_request<T>(
     let cookie_string = request
         .headers()
         .get(COOKIE)
-        .map(|value| value.to_str().ok())
-        .flatten();
+        .and_then(|value| value.to_str().ok());
 
     let cookies = cookie_string
         .map(|s| s.split("; ").collect::<Vec<&str>>())
-        .unwrap_or(Vec::<&str>::new())
+        .unwrap_or_default()
         .iter()
-        .filter_map(|s| s.split_once("="))
+        .filter_map(|s| s.split_once('='))
         .map(|(key, value)| (key.to_owned(), value.to_owned()))
         .collect::<HashMap<String, String>>();
 
@@ -96,7 +95,7 @@ impl<'a, T, Au: AuthState> ServerRequest<'a, T, Au> {
     pub fn get_url_param(&self, pos: usize, message: &str) -> Result<&str, ServerError> {
         self.uri()
             .path()
-            .split("/")
+            .split('/')
             .nth(pos)
             .ok_or(error::bad_request(message))
     }
@@ -104,7 +103,7 @@ impl<'a, T, Au: AuthState> ServerRequest<'a, T, Au> {
     pub fn get_trailing_param(&self, message: &str) -> Result<&str, ServerError> {
         self.uri()
             .path()
-            .split("/")
+            .split('/')
             .last()
             .ok_or(error::bad_request(message))
     }
@@ -124,7 +123,7 @@ impl<'a, T, Au: AuthState> ServerRequest<'a, T, Au> {
         let context = self.make_context(local_values);
         tmpl.render(context)
             .map(|x| x.into_bytes())
-            .map_err(|e| map_bad_gateway(e))
+            .map_err(map_bad_gateway)
     }
 
 // pub fn render_block(&self, path: &str, block_name: &str, local_values: Value) -> Vec<u8> {
@@ -238,15 +237,15 @@ impl<'a, Au: AuthState> ServerRequest<'a, Incoming, Au> {
         Ok(ServerRequest { request, global, db, domain, cookies, data })
     }
 
-    pub async fn to_text(self) -> Result<ServerRequest<'a, String, Au>, ServerError> {
-        self.get_body().await?.to_text()
+    pub async fn into_text(self) -> Result<ServerRequest<'a, String, Au>, ServerError> {
+        self.get_body().await?.into_text()
     }
 }
 
 // Not sure that I even need this intermediate state at all right now
 // But I think it will become relevant for uploading images
 impl<'a, Au: AuthState> ServerRequest<'a, Bytes, Au> {
-    pub fn to_text(self) -> Result<ServerRequest<'a, String, Au>, ServerError> {
+    pub fn into_text(self) -> Result<ServerRequest<'a, String, Au>, ServerError> {
         let (parts, body) = self.request.into_parts();
         let str = String::from_utf8(body.to_vec()).map_err(|_| body_not_utf8())?;
         let request = hyper::Request::from_parts(parts, str);
@@ -274,14 +273,13 @@ impl<'a, Au: AuthState> ServerRequest<'a, String, Au> {
 pub fn get_current_profile(db: &Connection, cookies: &HashMap<String, String>, domain: &str) -> Option<CurrentProfile> {
     let current_profile_id = cookies
         .get("current_profile")
-        .map(|id| id.parse::<i64>().ok())
-        .flatten();
+        .and_then(|id| id.parse::<i64>().ok());
 
     let current_profile_id: i64 = match current_profile_id {
         Some(p) => Some(p),
         None => {
             db.query_row("SELECT profile_id FROM profiles", (), |row| {
-                Ok(row.get(0)?)
+                row.get(0)
             }).ok()
         }
     }?;
@@ -289,7 +287,7 @@ pub fn get_current_profile(db: &Connection, cookies: &HashMap<String, String>, d
     let private_key_pem: String = db.query_row(
         "SELECT private_key_pem FROM profiles WHERE profile_id = ?1",
         (current_profile_id, ),
-        |row| Ok(row.get(0)?),
+        |row| row.get(0)
     ).ok()?;
     let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes()).ok()?;
     let current_profile = CurrentProfile {
