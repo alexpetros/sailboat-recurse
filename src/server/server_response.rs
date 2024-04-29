@@ -11,6 +11,7 @@ use super::server_request::{AnyRequest, AuthState};
 
 pub type ServerResponse = Response<BoxBody<Bytes, hyper::Error>>;
 pub type ServerResult = Result<ServerResponse, ServerError>;
+pub type InternalResult<T> = Result<T, ServerError>;
 
 
 pub fn empty() -> BoxBody<Bytes, hyper::Error> {

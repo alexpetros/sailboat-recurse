@@ -5,6 +5,7 @@ use crate::activitypub::signature::get_signature_header;
 use crate::activitypub::SHORT_ACCEPT_HEADER;
 use crate::server::error::{map_bad_gateway, ServerError};
 use crate::server::server_request::CurrentProfile;
+use crate::server::server_response::InternalResult;
 use crate::server::utils;
 use chrono::Utc;
 use chrono_tz::Etc::GMT;
@@ -27,7 +28,7 @@ fn build_activitypub_request(
     let date_header =
         HeaderValue::from_bytes(date.format("%a, %d %b %Y %X %Z").to_string().as_bytes())?;
     let key_id = format!("https://{}/profiles/{}#main-key", &domain, profile_id);
-    let signature = get_signature_header(&method, &key_id, &uri, date, pkey)?;
+    let signature = get_signature_header(&method, &key_id, uri, date, pkey)?;
 
     let client = reqwest::Client::new();
     let url = uri.to_string();
@@ -41,7 +42,7 @@ fn build_activitypub_request(
     Ok(request)
 }
 
-async fn get_from_ap<'a, T>(uri: &Uri, current_profile: &CurrentProfile) -> Result<T, ServerError>
+async fn get_from_ap<'a, T>(uri: &Uri, current_profile: &CurrentProfile) -> InternalResult<T>
 where
     T: DeserializeOwned,
 {
@@ -53,25 +54,19 @@ where
     Ok(item)
 }
 
-pub async fn get_actor(uri: &Uri, current_profile: &CurrentProfile) -> Result<Actor, ServerError> {
-    Ok(get_from_ap(uri, current_profile).await?)
+pub async fn get_actor(uri: &Uri, current_profile: &CurrentProfile) -> InternalResult<Actor> {
+    get_from_ap(uri, current_profile).await
 }
 
-pub async fn get_outbox(
-    uri: &Uri,
-    current_profile: &CurrentProfile,
-) -> Result<Outbox, ServerError> {
-    Ok(get_from_ap(uri, current_profile).await?)
+pub async fn get_outbox(uri: &Uri, current_profile: &CurrentProfile) -> InternalResult<Outbox> {
+    get_from_ap(uri, current_profile).await
 }
 
-pub async fn get_outbox_page(
-    uri: &Uri,
-    current_profile: &CurrentProfile,
-) -> Result<OrderedCollectionPage, ServerError> {
-    Ok(get_from_ap(uri, current_profile).await?)
+pub async fn get_outbox_page(uri: &Uri, current_profile: &CurrentProfile) -> InternalResult<OrderedCollectionPage> {
+    get_from_ap(uri, current_profile).await
 }
 
-pub async fn get_webfinger(host: &str, account_name: &str) -> Result<WebFinger, ServerError> {
+pub async fn get_webfinger(host: &str, account_name: &str) -> InternalResult<WebFinger> {
     let uri = format!("https://{}/.well-known/webfinger", host);
     let resource = format!("acct:{}@{}", account_name, host);
     let request = reqwest::Client::new()

@@ -66,26 +66,24 @@ pub async fn get_or_search_for_actor(
     // if actor.is_ok() { return Ok(actor.ok()); }
 
     let web_finger = get_webfinger(host, preferred_username).await?;
-    let self_link = web_finger
+    let actor_link = web_finger
         .links
         .as_ref()
-        .map(|links| {
+        .and_then(|links| {
             links
                 .iter()
                 .find(|l| l.rel == "self" && l.link_type == Some(LinkType::ActivityJson))
         })
-        .flatten()
-        .map(|link| link.href.clone())
-        .flatten();
+        .and_then(|link| link.href.clone());
 
-    let uri = match self_link.as_ref() {
+    let uri = match actor_link.as_ref() {
         None => return Ok(None),
         Some(link) => link.clone().parse::<Uri>(),
     }
     .map_err(|e| {
         warn!(
             "Invalid URI provided for self by {}@{}: {:?}",
-            preferred_username, host, &self_link
+            preferred_username, host, &actor_link
         );
         map_bad_gateway(e)
     })?;
