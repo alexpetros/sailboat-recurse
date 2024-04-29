@@ -26,20 +26,29 @@ pub async fn get<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
         req.db,
         Post {
             post_id: i64,
+            actor_name: String,
+            actor_handle: String,
             content: String,
             created_at: String,
             display_name: String,
             preferred_username: String
         },
         "
-        SELECT post_id, content, created_at, display_name, preferred_username
+        SELECT
+            post_id,
+            display_name as actor_name,
+            preferred_username as actor_handle,
+            content,
+            created_at,
+            display_name,
+            preferred_username
         FROM posts
         LEFT JOIN profiles USING (profile_id)
         WHERE post_id = ?1
         ",
         [post_id])?;
 
-    let body = req.render("_partials/post.html", context! { post })?;
+    let body = req.render("posts/_post_id.html", context! { post })?;
     Ok(send(body))
 }
 

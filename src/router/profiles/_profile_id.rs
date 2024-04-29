@@ -45,12 +45,10 @@ pub async fn get<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
         Err(_) => return not_found(req)
     };
 
-    if req.is_ap_req() {
-        serve_json_profile(req, profile)
-    } else {
-        serve_html_profile(req, profile).await
+    match req.is_ap_req() {
+        true => serve_json_profile(req, profile),
+        false => serve_html_profile(req, profile).await
     }
-
 }
 
 async fn serve_html_profile<Au: AuthState>(req: AnyRequest<'_, Au>, profile: Profile) -> ServerResult {

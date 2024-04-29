@@ -7,6 +7,7 @@
         <span class=user>{{ post.actor_name }}</span> -
         <span class=preferred_username>{{ post.actor_handle }}</span>
       </address>
+      {% if post.is_owner %}
       <button class=delete
               hx-delete="/posts/{{ post.post_id }}"
               hx-target="closest article"
@@ -14,6 +15,7 @@
               hx-confirm="Are you sure you want to delete this post?"
       >Delete
       </button>
+      {% endif %}
     </div>
     <p>{{ post.content | safe }}</p>
     <footer>{{ iso_to_local(post.created_at) }}</footer>
