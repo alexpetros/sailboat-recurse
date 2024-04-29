@@ -1,6 +1,6 @@
 use crate::{query_row_custom, server::server_response::InternalResult};
 
-use super::{AtContext, Context};
+use super::{note::Note, AtContext, Context};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -75,22 +75,6 @@ pub enum Object {
     Note(Note),
     #[serde(untagged)]
     Unknown(serde_json::Value),
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub enum NoteType {
-    Note,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Note {
-    pub id: String,
-    #[serde(rename = "type")]
-    note_type: NoteType,
-    pub summary: Option<String>,
-    pub published: Option<String>,
-    pub url: String,
-    pub content: String,
 }
 
 pub fn get_outbox(db: &Connection, profile_id: i64, domain: &str) -> InternalResult<Outbox> {

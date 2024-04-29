@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 pub mod actor;
 pub mod outbox;
 pub mod webfinger;
+pub mod note;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Context {

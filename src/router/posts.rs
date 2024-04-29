@@ -1,11 +1,12 @@
+use crate::activitypub::objects::note::get_post;
 use crate::query_row_custom;
-use crate::server::error;
 use crate::server::error::body_not_utf8;
 use crate::server::server_request::{AnyRequest, AuthState, AuthedRequest};
 use crate::server::server_response::{send, ServerResult};
 use crate::templates::_partials::post::Post;
 use minijinja::context;
 use serde::Deserialize;
+use serde_json::json;
 use tracing::log::debug;
 
 #[derive(Debug, Deserialize)]
@@ -15,13 +16,14 @@ struct PostForm {
 }
 
 pub async fn get<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
-    let post_id = req
-        .uri()
-        .path()
-        .split('/')
-        .nth(2)
-        .ok_or(error::bad_request("Missing post ID"))?;
+    match req.is_ap_req() {
+        true => get_json(req),
+        false => get_html(req)
+    }
+}
 
+fn get_html<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
+    let post_id = req.get_url_param(2, "Missing post ID")?;
     let post = query_row_custom!(
         req.db,
         Post {
@@ -49,6 +51,13 @@ pub async fn get<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
         [post_id])?;
 
     let body = req.render("posts/_post_id.html", context! { post })?;
+    Ok(send(body))
+}
+
+fn get_json<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
+    let post_id = req.get_url_param(2, "Missing post ID")?;
+    let post = get_post(&req.db, post_id, &req.domain)?;
+    let body = json!(post).to_string();
     Ok(send(body))
 }
 
@@ -89,15 +98,8 @@ pub async fn post(req: AuthedRequest<'_>) -> ServerResult {
 }
 
 pub async fn delete(req: AuthedRequest<'_>) -> ServerResult {
-    let post_param = req
-        .uri()
-        .path()
-        .split('/')
-        .nth(2)
-        .ok_or(error::bad_request("Missing post ID"))?;
-
+    let post_param = req.get_url_param(2, "Missing post ID")?;
     debug!("Deleting post {}", post_param);
-    req.db
-        .execute("DELETE FROM posts WHERE post_id = ?1", [post_param])?;
+    req.db.execute("DELETE FROM posts WHERE post_id = ?1", [post_param])?;
     Ok(send("".to_owned()))
 }
