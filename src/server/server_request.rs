@@ -37,28 +37,28 @@ pub struct NoAuth;
 pub struct SetupPhase;
 
 #[derive(Serialize)]
-pub struct AuthData {
+pub struct SessionData {
     pub profiles: Vec<Profile>,
     pub current_profile: CurrentProfile,
 }
 
 pub trait AuthState {
-    fn get(&self) -> Option<&AuthData>;
+    fn get(&self) -> Option<&SessionData>;
 }
 
 impl AuthState for SetupPhase {
-    fn get(&self) -> Option<&AuthData> { None }
+    fn get(&self) -> Option<&SessionData> { None }
 }
 
 impl AuthState for NoAuth {
-    fn get(&self) -> Option<&AuthData> { None }
+    fn get(&self) -> Option<&SessionData> { None }
 }
 
-impl AuthState for AuthData {
-    fn get(&self) -> Option<&AuthData> { Some(self) }
+impl AuthState for SessionData {
+    fn get(&self) -> Option<&SessionData> { Some(self) }
 }
 
-pub type AuthedRequest<'a> = ServerRequest<'a, Incoming, AuthData>;
+pub type AuthedRequest<'a> = ServerRequest<'a, Incoming, SessionData>;
 pub type SetupRequest<'a> = ServerRequest<'a, Incoming, SetupPhase>;
 pub type PlainRequest<'a> = ServerRequest<'a, Incoming, NoAuth>;
 pub type AnyRequest<'a, Au> = ServerRequest<'a, Incoming, Au>;
@@ -191,7 +191,7 @@ impl<'a, T> ServerRequest<'a, T, NoAuth> {
 }
 
 pub enum SetupStatus<'a, T> {
-    Complete(ServerRequest<'a, T, AuthData>),
+    Complete(ServerRequest<'a, T, SessionData>),
     Incomplete(ServerRequest<'a, T, SetupPhase>),
 }
 
@@ -225,7 +225,7 @@ impl<'a, T> ServerRequest<'a, T, SetupPhase> {
             }
         };
 
-        let data = AuthData { profiles, current_profile };
+        let data = SessionData { profiles, current_profile };
 
         let req = ServerRequest { request, global, db, domain, cookies, data };
         Ok(SetupStatus::Complete(req))
