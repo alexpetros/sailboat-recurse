@@ -22,8 +22,7 @@ pub async fn post(req: AuthedRequest<'_>) -> ServerResult {
     let query: Query = req.get_form_data()?;
     let handle = get_full_handle(&query.q)?;
 
-    let actor =
-        queries::get_or_search_for_actor(&handle, &req.data.current_profile).await?;
+    let actor = queries::get_or_search_for_actor(&handle, &req.data.current_profile).await?;
     let actor = match actor {
         None => return Ok(send("No account found")),
         Some(actor) => actor,

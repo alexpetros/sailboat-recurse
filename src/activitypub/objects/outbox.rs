@@ -1,4 +1,7 @@
-use super::AtContext;
+use crate::{query_row_custom, server::server_response::InternalResult};
+
+use super::{AtContext, Context};
+use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -25,7 +28,6 @@ pub struct OrderedCollectionPage {
 }
 // https://www.w3.org/TR/activitystreams-core/#collection
 #[derive(Debug, Serialize, Deserialize)]
-
 pub struct Outbox {
     #[serde(rename = "@context")]
     pub context: AtContext,
@@ -36,7 +38,9 @@ pub struct Outbox {
     pub total_items: i64,
     pub first: PageOrLink,
     pub last: PageOrLink,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub current: Option<PageOrLink>, // This is theoretically mandatory
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub items: Option<Vec<Value>>,
 }
 
@@ -84,4 +88,31 @@ pub struct Note {
     pub published: Option<String>,
     pub url: String,
     pub content: String,
+}
+
+pub fn get_outbox(db: &Connection, profile_id: i64, domain: &str) -> InternalResult<Outbox> {
+    let profile = query_row_custom!(
+        db,
+        Profile { total_items: i64 },
+        "SELECT count(*) as total_items FROM posts WHERE profile_id = ?",
+        [profile_id]
+    )?;
+
+    let outbox_url = format!("{}/profiles/{}/outbox", domain, profile_id);
+    // TODO: Pagination
+    let first_page = format!("{}/profiles/{}/outbox?page=1", domain, profile_id);
+    let last_page = format!("{}/profiles/{}/outbox?page=1", domain, profile_id);
+
+    let outbox = Outbox {
+        context: AtContext::Context(Context::ActivityStreams),
+        id: outbox_url,
+        _type: OrderedCollectionType::OrderedCollection,
+        total_items: profile.total_items,
+        items: None,
+        first: PageOrLink::Link(first_page),
+        last: PageOrLink::Link(last_page),
+        current: None
+    };
+
+    Ok(outbox)
 }

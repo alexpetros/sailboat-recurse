@@ -1,11 +1,11 @@
-// use crate::{activitypub::objects::outbox::Outbox, server::{server_request::IncomingRequest, server_response::ServerResponse}};
+use serde_json::json;
 
-// pub fn get(req: IncomingRequest<'_>) -> ServerResponse {
-//     let outbox = Outbox {
-//         context: ActivityStreams,
-//         id: "",
-//         _type: OrderedCollection,
-//         total_items: 1,
-//         items: []
-//     }
-// }
+use crate::{activitypub::objects::outbox::get_outbox, server::{server_request::{AnyRequest, AuthState}, server_response::{send, ServerResult}}};
+
+
+pub async fn get<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
+    let profile_id = 1;
+    let outbox = get_outbox(&req.db, profile_id, &req.domain)?;
+    let body = json!(outbox).to_string();
+    Ok(send(body))
+}

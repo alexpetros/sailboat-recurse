@@ -25,7 +25,7 @@ use std::sync::Arc;
 use tracing::debug;
 use tracing::error;
 use tracing::warn;
-use crate::router::profiles::_profile_id::following;
+use crate::router::profiles::_profile_id::{following, outbox};
 
 use crate::server::context::GlobalContext;
 use crate::server::server_request::{new_request, AuthStatus, AuthedRequest, PlainRequest, SetupRequest, SetupStatus};
@@ -121,6 +121,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
         (GET,       ["profiles", "new"]) =>             (require_authentication, profiles::new::get),
         (GET,       ["profiles", _]) =>                 (any, _profile_id::get),
         (GET,       ["profiles", _, "following"]) =>    (require_full_setup, following::get),
+        (GET,       ["profiles", _, "outbox"]) =>       (any, outbox::get),
 
         (POST,      ["posts"]) =>                       (require_full_setup, posts::post),
         (DELETE,    ["posts", ..]) =>                   (require_full_setup, posts::delete),

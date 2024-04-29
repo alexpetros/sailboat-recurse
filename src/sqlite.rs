@@ -16,6 +16,27 @@ pub fn get_conn(path: &str) -> Result<Connection, Error> {
 }
 
 #[macro_export]
+macro_rules! query_row_custom {
+    (
+        $db:expr,
+        $struct_name:ident { $( $field_name:ident : $type:ty ),+ },
+        $query:literal,
+        $params:expr
+    ) => {{
+        #[derive(Debug, serde::Serialize, serde::Deserialize)]
+        struct $struct_name {
+            $( $field_name : $type),+
+        }
+        let mut query = $db.prepare($query)?;
+        let row = query.query_row($params, |row| {
+            let item = $crate::make_struct!(row, $struct_name, $( $field_name ),+);
+            Ok(item)
+        });
+        row
+    }}
+}
+
+#[macro_export]
 macro_rules! query_row {
     (
         $db:expr,
