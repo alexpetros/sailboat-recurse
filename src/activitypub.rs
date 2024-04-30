@@ -5,7 +5,6 @@ pub mod objects;
 pub mod requests;
 pub mod signature;
 
-static SHORT_ACCEPT_HEADER: &str = "application/activity+json";
 static PUBLIC_STREAM: &str = "https://www.w3.org/ns/activitystreams#Public";
 
 #[derive(Debug)]

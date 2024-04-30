@@ -13,10 +13,10 @@ use std::ops::Deref;
 use std::sync::Arc;
 use tracing::log::warn;
 
-static LONG_ACCEPT_HEADER: &str = "application/ld+json;profile=“https://www.w3.org/ns/activitystreams";
-static SHORT_ACCEPT_HEADER: &str = "application/activity+json";
+pub static LONG_ACCEPT_HEADER: &str = "application/ld+json;profile=“https://www.w3.org/ns/activitystreams";
+pub static SHORT_ACCEPT_HEADER: &str = "application/activity+json";
 
-use super::error::{body_not_utf8, body_too_large};
+use super::error::{bad_request, body_not_utf8, body_too_large};
 
 const ENV: &str = if cfg!(debug_assertions) { "debug" } else { "prod" };
 
@@ -101,6 +101,11 @@ impl<'a, T, Au: AuthState> ServerRequest<'a, T, Au> {
             .split('/')
             .nth(pos)
             .ok_or(error::bad_request(message))
+    }
+
+    pub fn get_int_url_param(&self, pos: usize, message: &str) -> Result<i64, ServerError> {
+        let str_param = self.get_url_param(pos, message)?;
+        str_param.parse().map_err(|_| bad_request("Invalid URL parameter provided"))
     }
 
     pub fn get_trailing_param(&self, message: &str) -> Result<&str, ServerError> {

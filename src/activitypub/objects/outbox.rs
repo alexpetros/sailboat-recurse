@@ -1,4 +1,4 @@
-use crate::{query_row_custom, server::server_response::InternalResult};
+use crate::{activitypub::PUBLIC_STREAM, query_map, query_row_custom, server::server_response::InternalResult};
 
 use super::{note::Note, AtContext, Context};
 use rusqlite::Connection;
@@ -26,6 +26,7 @@ pub struct OrderedCollectionPage {
     #[serde(rename = "orderedItems")]
     pub ordered_items: Vec<Activity>,
 }
+pub type OutboxPage = OrderedCollectionPage;
 
 // type OutboxPage = OrderedCollectionPage;
 
@@ -63,14 +64,17 @@ pub struct Activity {
     pub id: String,
     pub actor: Option<String>,
     pub published: Option<String>,
-    pub to: Option<Vec<String>>,
-    pub cc: Option<Vec<String>>,
+    #[serde(default)]
+    pub to: Vec<String>,
+    #[serde(default)]
+    pub cc: Vec<String>,
     pub object: Object,
 }
 
 // https://www.w3.org/TR/activitystreams-vocabulary/#object-types
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
 pub enum Object {
     Note(Note),
     #[serde(untagged)]
@@ -104,6 +108,57 @@ pub fn get_outbox(db: &Connection, profile_id: i64, domain: &str) -> InternalRes
     Ok(outbox)
 }
 
-// pub fn get_outbox_page(db: &Connection, profile_id: i64, domain: &str, page_num: usize) -> InternalResult<OutboxPage> {
-//     let posts = db.prepare()
-// }
+pub fn get_outbox_page(db: &Connection, profile_id: i64, domain: &str, _page_num: usize) -> InternalResult<OutboxPage> {
+    let posts = query_map!(
+        db,
+        Post {
+            post_id: i64,
+            profile_id: i64,
+            created_at: String,
+            content: String
+        },
+        "FROM posts WHERE profile_id = ?1",
+        [ profile_id ]);
+
+    let page_url = format!("{}/profiles/{}/outbox?page=1", domain, profile_id);
+
+    let items = posts.into_iter().map(|post| {
+        let post_url = format!("{}/posts/{}", domain, post.post_id);
+        let to_field = vec![PUBLIC_STREAM.to_owned()];
+        let cc_field = vec![];
+
+        let note = Note {
+            id: page_url.to_owned(),
+            _type: super::note::NoteType::Note,
+            url: post_url.to_owned(),
+            summary: None,
+            published: Some(post.created_at.to_owned()),
+            attributed_to: Some(post_url.to_owned()),
+            to: to_field.clone(),
+            cc: cc_field.clone(),
+            sensitive: false,
+            content: post.content,
+            tag: vec![]
+        };
+        Activity {
+            context: Some(AtContext::Context(Context::ActivityStreams)),
+            activity_type: ActivityType::Create,
+            id: page_url.to_owned(),
+            actor: Some(page_url.to_owned()),
+            published: Some(post.created_at.to_owned()),
+            to:to_field.clone(),
+            cc: cc_field.clone(),
+            object: Object::Note(note)
+        }
+    }).collect();
+
+
+    let page = OrderedCollectionPage {
+        context: AtContext::Context(Context::ActivityStreams),
+        next: None,
+        prev: Some(Box::new(PageOrLink::Link(page_url.to_owned()))),
+        ordered_items: items
+    };
+
+    Ok(page)
+}

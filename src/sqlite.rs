@@ -16,27 +16,6 @@ pub fn get_conn(path: &str) -> Result<Connection, Error> {
 }
 
 #[macro_export]
-macro_rules! query_row_custom {
-    (
-        $db:expr,
-        $struct_name:ident { $( $field_name:ident : $type:ty ),+ },
-        $query:literal,
-        $params:expr
-    ) => {{
-        #[derive(Debug, serde::Serialize, serde::Deserialize)]
-        struct $struct_name {
-            $( $field_name : $type),+
-        }
-        let mut query = $db.prepare($query)?;
-        let row = query.query_row($params, |row| {
-            let item = $crate::make_struct!(row, $struct_name, $( $field_name ),+);
-            Ok(item)
-        });
-        row
-    }}
-}
-
-#[macro_export]
 macro_rules! query_row {
     (
         $db:expr,
@@ -59,6 +38,27 @@ macro_rules! query_row {
 }
 
 #[macro_export]
+macro_rules! query_row_custom {
+    (
+        $db:expr,
+        $struct_name:ident { $( $field_name:ident : $type:ty ),+ },
+        $query:literal,
+        $params:expr
+    ) => {{
+        #[derive(Debug, serde::Serialize, serde::Deserialize)]
+        struct $struct_name {
+            $( $field_name : $type),+
+        }
+        let mut query = $db.prepare($query)?;
+        let row = query.query_row($params, |row| {
+            let item = $crate::make_struct!(row, $struct_name, $( $field_name ),+);
+            Ok(item)
+        });
+        row
+    }}
+}
+
+#[macro_export]
 macro_rules! query_map {
     (
         $db:expr,
@@ -72,6 +72,29 @@ macro_rules! query_map {
         }
         let query_str = concat!("SELECT ", $crate::join_with_commas!($( $field_name ),+), " ", $query);
         let mut query = $db.prepare(query_str)?;
+        let rows = query.query_map($params, |row| {
+            let item = $crate::make_struct!(row, $struct_name, $( $field_name ),+);
+            Ok(item)
+        })?;
+
+        let rows: Vec<$struct_name> = rows.collect::<Result<_, _>>()?;
+        rows
+    }}
+}
+
+#[macro_export]
+macro_rules! query_map_custom {
+    (
+        $db:expr,
+        $struct_name:ident { $( $field_name:ident : $type:ty ),+ },
+        $query:literal,
+        $params:expr
+    ) => {{
+        #[derive(Debug, serde::Serialize, serde::Deserialize)]
+        struct $struct_name {
+            $( $field_name : $type),+
+        }
+        let mut query = $db.prepare($query)?;
         let rows = query.query_map($params, |row| {
             let item = $crate::make_struct!(row, $struct_name, $( $field_name ),+);
             Ok(item)
