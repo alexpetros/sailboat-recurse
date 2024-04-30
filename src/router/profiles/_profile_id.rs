@@ -10,6 +10,7 @@ use hyper::header::{HeaderValue, CONTENT_TYPE};
 use minijinja::context;
 use serde_json::json;
 
+pub mod inbox;
 pub mod outbox;
 pub mod following;
 

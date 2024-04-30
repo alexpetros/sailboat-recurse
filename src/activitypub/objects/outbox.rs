@@ -24,7 +24,7 @@ pub struct OrderedCollectionPage {
     pub next: Option<Box<PageOrLink>>,
     pub prev: Option<Box<PageOrLink>>,
     #[serde(rename = "orderedItems")]
-    pub ordered_items: Vec<Activity>,
+    pub ordered_items: Vec<CreateActivity>,
 }
 pub type OutboxPage = OrderedCollectionPage;
 
@@ -50,13 +50,25 @@ pub struct Outbox {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ActivityType {
+    Follow,
     Create,
     #[serde(untagged)]
     Unknown(serde_json::Value),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Activity {
+pub struct FollowActivity {
+    #[serde(rename = "@context")]
+    pub context: AtContext,
+    #[serde(rename = "type")]
+    pub activity_type: ActivityType,
+    pub id: String,
+    pub actor: String,
+    pub object: String
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateActivity {
     #[serde(rename = "@context")]
     pub context: Option<AtContext>,
     #[serde(rename = "type")]
@@ -140,7 +152,7 @@ pub fn get_outbox_page(db: &Connection, profile_id: i64, domain: &str, _page_num
             content: post.content,
             tag: vec![]
         };
-        Activity {
+        CreateActivity {
             context: Some(AtContext::Context(Context::ActivityStreams)),
             activity_type: ActivityType::Create,
             id: page_url.to_owned(),

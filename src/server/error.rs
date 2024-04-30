@@ -11,6 +11,19 @@ pub struct ServerError {
     pub status_code: StatusCode,
 }
 
+impl PartialEq for ServerError {
+    fn eq(&self, other: &Self) -> bool {
+        self.message == other.message && self.status_code == other.status_code
+    }
+}
+
+// pub trait PartialEq<Rhs = Self>
+// where
+//     Rhs: ?Sized,
+// {
+//     fn eq(&self, other: &Rhs) -> bool;
+// }
+
 impl Error for ServerError {}
 
 impl Display for ServerError {

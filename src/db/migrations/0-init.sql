@@ -13,6 +13,11 @@ CREATE TABLE posts (
   created_at TEXT NOT NULL DEFAULT (strftime('%FT%TZ', CURRENT_TIMESTAMP))
 ) STRICT;
 
+CREATE TABLE followers (
+  profile_id INTEGER NOT NULL REFERENCES profiles ON DELETE CASCADE ON UPDATE CASCADE,
+  following_actor TEXT NOT NULL
+) STRICT;
+
 CREATE TABLE followed_actors (
   followed_actor_id INTEGER PRIMARY key,
   profile_id INTEGER NOT NULL REFERENCES profiles ON DELETE CASCADE ON UPDATE CASCADE,

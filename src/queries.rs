@@ -1,8 +1,10 @@
 use crate::activitypub::objects::actor::{Actor, LinkType};
 use crate::activitypub::requests::{get_actor, get_webfinger};
 use crate::activitypub::FullHandle;
-use crate::server::error::{map_bad_gateway, ServerError};
+use crate::query_row;
+use crate::server::error::{bad_request, map_bad_gateway, ServerError};
 use crate::server::server_request::CurrentProfile;
+use crate::server::server_response::InternalResult;
 use crate::templates::_partials::post::Post;
 use hyper::Uri;
 use rusqlite::Connection;
@@ -102,4 +104,64 @@ pub async fn get_or_search_for_actor(
     // };
 
     Ok(Some(actor))
+}
+
+pub fn get_profile_id_from_url(db: &Connection, url: &str) -> InternalResult<i64> {
+    // let preferred_username = _get_preferred_username_from_url(url)?;
+    let uri: Uri = url.parse().map_err(|_| bad_request("Invalid URI provided"))?;
+    let profile_id = uri.path().split('/').last();
+    let profile = query_row!(
+        db,
+        Profile { profile_id: i64 },
+        "FROM profiles WHERE profile_id = ?1",
+        [profile_id]
+        )?;
+
+    Ok(profile.profile_id)
+}
+
+fn _get_preferred_username_from_url(url: &str) -> InternalResult<String> {
+    let uri: Uri = url.parse().map_err(|_| bad_request("Invalid URI provided"))?;
+    let path = &uri.path()[1..];
+    let path_split = path.split_once('/').ok_or(bad_request("Non-profile URI provided"))?;
+
+    let (route, preferred_username) = path_split;
+    if route != "profiles" {
+        return Err(bad_request("Non-profile URI provided"));
+    }
+
+    Ok(preferred_username.to_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bad_url() {
+        let url = "not a url";
+        let username = _get_preferred_username_from_url(url);
+        assert_eq!(username, Err(bad_request("Invalid URI provided")))
+    }
+
+    #[test]
+    fn schemaless_url() {
+        let url = "example.com/not-profiles/1";
+        let username = _get_preferred_username_from_url(url);
+        assert_eq!(username, Err(bad_request("Invalid URI provided")))
+    }
+
+    #[test]
+    fn non_profile_url() {
+        let url = "http://example.com/not-profiles/alex";
+        let username = _get_preferred_username_from_url(url);
+        assert_eq!(username, Err(bad_request("Non-profile URI provided")))
+    }
+
+    #[test]
+    fn profile_url() {
+        let url = "http://example.com/profiles/alex";
+        let username = _get_preferred_username_from_url(url);
+        assert_eq!(username, Ok("alex".to_owned()))
+    }
 }

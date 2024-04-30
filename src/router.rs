@@ -25,7 +25,7 @@ use std::sync::Arc;
 use tracing::debug;
 use tracing::error;
 use tracing::warn;
-use crate::router::profiles::_profile_id::{following, outbox};
+use crate::router::profiles::_profile_id::{following, inbox, outbox};
 
 use crate::server::context::GlobalContext;
 use crate::server::server_request::{new_request, AuthStatus, AuthedRequest, PlainRequest, SetupRequest, SetupStatus};
@@ -103,6 +103,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
     };
 
     // Split into sub-routes
+    // TODO use path_and_query
     let sub_routes: Vec<&str> = without_query.split('/').collect();
     let sub_routes = &sub_routes[1..];
     let method = req.method().clone();
@@ -122,6 +123,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
         (GET,       ["profiles", _]) =>                 (any, _profile_id::get),
         (GET,       ["profiles", _, "following"]) =>    (require_full_setup, following::get),
         (GET,       ["profiles", _, "outbox"]) =>       (any, outbox::get),
+        (POST,       ["profiles", _, "inbox"]) =>        (any, inbox::post),
 
         (POST,      ["posts"]) =>                       (require_full_setup, posts::post),
         (GET,       ["posts", ..]) =>                   (any, posts::get),
