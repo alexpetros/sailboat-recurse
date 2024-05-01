@@ -115,6 +115,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
         (POST,      ["login"]) =>                       (any, login::post),
         (GET,       ["logout"]) =>                      (any, logout::get),
 
+        (POST,      ["inbox"]) =>                       (any, inbox::post),
         (GET,       ["feeds", _]) =>                    (require_full_setup, _feed_handle::get),
         (POST,      ["follow"]) =>                      (require_full_setup, follow::post),
 
@@ -123,7 +124,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
         (GET,       ["profiles", _]) =>                 (any, _profile_id::get),
         (GET,       ["profiles", _, "following"]) =>    (require_full_setup, following::get),
         (GET,       ["profiles", _, "outbox"]) =>       (any, outbox::get),
-        (POST,       ["profiles", _, "inbox"]) =>        (any, inbox::post),
+        (POST,       ["profiles", _, "inbox"]) =>       (any, inbox::post),
 
         (POST,      ["posts"]) =>                       (require_full_setup, posts::post),
         (GET,       ["posts", ..]) =>                   (any, posts::get),

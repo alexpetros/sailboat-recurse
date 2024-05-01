@@ -1,16 +1,82 @@
-use hyper::StatusCode;
+use hyper::{StatusCode, Uri};
+use serde::Deserialize;
+use serde_json::json;
+use tracing::warn;
 
-use crate::{activitypub::objects::outbox::FollowActivity, server::{error::map_bad_request, server_request::{AnyRequest, AuthState}, server_response::{send_status, ServerResult}}};
+use crate::{activitypub::{objects::{outbox::{AcceptActivity, ActivityType, FollowActivity, UndoActivity}, AtContext, Context}, requests::{self, send_as}}, router::debug, server::{error::bad_request, server_request::{AnyRequest, AuthState, CurrentProfile, ServerRequest}, server_response::{send_status, ServerResult}}};
 use crate::queries::get_profile_id_from_url;
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum InboxPost {
+    Follow(FollowActivity),
+    Undo(UndoActivity<FollowActivity>)
+}
 
 pub async fn post<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
     let req = req.into_text().await?;
-    let follow_req: FollowActivity = serde_json::from_str(req.body()).map_err(map_bad_request)?;
+    let body: InboxPost = req.parse_json()?;
+    match body {
+        InboxPost::Follow(activity) => follow(req, activity).await,
+        InboxPost::Undo(activity) => undo_follow(req, activity)
+    }
+}
 
-    let profile_id = get_profile_id_from_url(&req.db, &follow_req.object)?;
+async fn follow<Au: AuthState>(req: ServerRequest<'_, String, Au>, follow_activity: FollowActivity) -> ServerResult {
+    let actor_uri: Uri = follow_activity.actor.parse().map_err(|_| bad_request("Invalid actor URI provided"))?;
+    let profile_id = get_profile_id_from_url(&req.db, &follow_activity.object)?;
+
+    let profile = CurrentProfile::new(&req.db, profile_id, &req.domain).ok_or_else(|| {
+        bad_request(&format!("Feed {} not found", profile_id))
+    })?;
 
     req.db.execute("INSERT OR REPLACE INTO followers (profile_id, following_actor) VALUES (?1, ?2)",
-                   (profile_id, follow_req.actor))?;
+                   (profile_id, &follow_activity.actor))?;
+
+    let accept = AcceptActivity {
+        context: AtContext::Context(Context::ActivityStreams),
+        activity_type: ActivityType::Accept,
+        id: "1223234932098".to_owned(), // TODO generate these
+        actor: format!("{}/profiles/{}", req.domain, profile_id),
+        object: follow_activity
+    };
+
+    let accept_body = json!(accept).to_string();
+
+    tokio::spawn(async move {
+        let inbox_uri = requests::get_actor(&actor_uri, &profile)
+            .await
+            .ok()
+            .and_then(|actor| { actor.inbox })
+            .and_then(|inbox| { inbox.parse::<Uri>().ok() });
+
+        let inbox_uri = match inbox_uri {
+            Some(uri) => uri,
+            None => return
+        };
+
+        let res = send_as(&inbox_uri, &profile, accept_body).await;
+        let res = match res {
+            Ok(r) => r,
+            Err(e) => { return warn!("Failed to send confirmation to {}: {:?}", actor_uri, e) }
+        };
+
+        let code = res.status();
+        let res_body = res.text().await;
+        match res_body {
+            Ok(body) => debug!("Received {} {}", code, body),
+            Err(e) => warn!("Unable to reach {}: {:?}", actor_uri, e)
+        };
+
+    });
+
+    send_status(StatusCode::OK)
+}
+
+fn undo_follow<Au: AuthState>(req: ServerRequest<'_, String, Au>, undo_activity: UndoActivity<FollowActivity>) -> ServerResult {
+    let profile_id = get_profile_id_from_url(&req.db, &undo_activity.object.object)?;
+    req.db.execute("DELETE FROM followers WHERE profile_id = ?1 AND following_actor = ?2",
+                   (profile_id, &undo_activity.actor))?;
 
     send_status(StatusCode::OK)
 }

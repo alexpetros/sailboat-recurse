@@ -50,19 +50,43 @@ pub struct Outbox {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ActivityType {
+    Accept,
     Follow,
     Create,
+    Undo,
     #[serde(untagged)]
     Unknown(serde_json::Value),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct FollowActivity {
+pub struct AcceptActivity<A> {
     #[serde(rename = "@context")]
     pub context: AtContext,
     #[serde(rename = "type")]
     pub activity_type: ActivityType,
     pub id: String,
+    pub actor: String,
+    pub object: A
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UndoActivity<A> {
+    #[serde(rename = "@context")]
+    pub context: Option<AtContext>,
+    pub id: String,
+    #[serde(rename = "type")]
+    pub activity_type: ActivityType,
+    pub actor: String,
+    pub object: A
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FollowActivity {
+    #[serde(rename = "@context")]
+    pub context: Option<AtContext>,
+    pub id: String,
+    #[serde(rename = "type")]
+    pub activity_type: ActivityType,
     pub actor: String,
     pub object: String
 }

@@ -17,6 +17,7 @@ pub static LONG_ACCEPT_HEADER: &str = "application/ld+json;profile=“https://ww
 pub static SHORT_ACCEPT_HEADER: &str = "application/activity+json";
 
 use super::error::{bad_request, body_not_utf8, body_too_large};
+use super::server_response::InternalResult;
 
 const ENV: &str = if cfg!(debug_assertions) { "debug" } else { "prod" };
 
@@ -31,6 +32,24 @@ pub struct CurrentProfile {
     pub profile_id: i64,
     pub domain: String,
     #[serde(skip)] pub pkey: PKey<Private>,
+}
+
+impl CurrentProfile {
+    pub fn new(db: &Connection, profile_id: i64, domain: &str) -> Option<Self> {
+        let private_key_pem: String = db.query_row(
+            "SELECT private_key_pem FROM profiles WHERE profile_id = ?1",
+            [profile_id],
+            |row| row.get(0)
+            ).ok()?;
+        let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes()).ok()?;
+        let current_profile = CurrentProfile {
+            profile_id,
+            pkey,
+            domain: domain.to_owned(),
+        };
+
+        Some(current_profile)
+    }
 }
 
 pub struct NoAuth;
@@ -221,7 +240,17 @@ impl<'a, T> ServerRequest<'a, T, SetupPhase> {
         let domain = self.domain;
         let cookies = self.cookies;
 
-        let current_profile = get_current_profile(&db, &cookies, &domain);
+        let current_profile_id = cookies
+            .get("current_profile")
+            .and_then(|id| id.parse::<i64>().ok())
+            .or_else(|| {
+                db.query_row("SELECT profile_id FROM profiles", (), |row| { row.get(0) }).ok()
+            });
+
+        let current_profile = current_profile_id.map(|profile_id| {
+            CurrentProfile::new(&db, profile_id, &domain)
+        }).flatten();
+
         let current_profile = match current_profile {
             Some(p) => p,
             None => {
@@ -282,39 +311,19 @@ impl<'a, Au: AuthState> ServerRequest<'a, Bytes, Au> {
 }
 
 impl<'a, Au: AuthState> ServerRequest<'a, String, Au> {
-    pub fn get_form_data<T: Deserialize<'a>>(&'a self) -> Result<T, ServerError> {
+    pub fn get_form_data<T: Deserialize<'a>>(&'a self) -> InternalResult<T> {
         let str = self.body();
         serde_html_form::from_str::<T>(str).map_err(|e| {
             warn!("failed to deserialize request {}", &self.body());
             map_bad_request(e)
         })
     }
-}
 
-pub fn get_current_profile(db: &Connection, cookies: &HashMap<String, String>, domain: &str) -> Option<CurrentProfile> {
-    let current_profile_id = cookies
-        .get("current_profile")
-        .and_then(|id| id.parse::<i64>().ok());
-
-    let current_profile_id: i64 = match current_profile_id {
-        Some(p) => Some(p),
-        None => {
-            db.query_row("SELECT profile_id FROM profiles", (), |row| {
-                row.get(0)
-            }).ok()
-        }
-    }?;
-
-    let private_key_pem: String = db.query_row(
-        "SELECT private_key_pem FROM profiles WHERE profile_id = ?1",
-        (current_profile_id, ),
-        |row| row.get(0)
-    ).ok()?;
-    let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes()).ok()?;
-    let current_profile = CurrentProfile {
-        profile_id: current_profile_id,
-        pkey,
-        domain: domain.to_owned(),
-    };
-    Some(current_profile)
+    pub fn parse_json<T: Deserialize<'a>>(&'a self) -> InternalResult<T> {
+        let str = self.body();
+        serde_json::from_str::<T>(str).map_err(|e| {
+            warn!("failed to deserialize request body {}", &self.body());
+            map_bad_request(e)
+        })
+    }
 }
