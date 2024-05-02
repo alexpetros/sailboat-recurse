@@ -12,6 +12,7 @@ mod serve_static;
 mod switch;
 mod well_known;
 
+use crate::router::posts::_post_id;
 use crate::router::well_known::webfinger;
 use crate::server::error::{forbidden, ServerError};
 use crate::server::server_response::{redirect, ServerResult};
@@ -128,7 +129,7 @@ pub async fn router(req: Request<Incoming>, g_ctx: Arc<GlobalContext<'_>>) -> Se
         (POST,       ["profiles", _, "inbox"]) =>       (any, inbox::post),
 
         (POST,      ["posts"]) =>                       (require_full_setup, posts::post),
-        (GET,       ["posts", ..]) =>                   (any, posts::get),
+        (GET,       ["posts", ..]) =>                   (any, _post_id::get),
         (DELETE,    ["posts", ..]) =>                   (require_full_setup, posts::delete),
 
         (GET,       ["switch", _]) =>                   (any, switch::get),
