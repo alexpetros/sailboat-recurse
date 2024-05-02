@@ -4,19 +4,9 @@ use crate::server::server_response::ServerResult;
 use openssl::pkey::PKey;
 use openssl::rsa::Rsa;
 use serde::Deserialize;
-use serde::Serialize;
 
 pub mod _profile_id;
 pub mod new;
-
-#[derive(Serialize, Deserialize)]
-struct Profile {
-    profile_id: i64,
-    preferred_username: String,
-    display_name: String,
-    nickname: String,
-    private_key_pem: String,
-}
 
 #[derive(Deserialize)]
 struct NewProfile {

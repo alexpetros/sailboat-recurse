@@ -9,12 +9,11 @@ pub async fn get(req: AuthedRequest<'_>) -> ServerResult {
     let following = query_map!(
         req.db,
         Actor { url: String, name: String, preferred_username: String },
-        "FROM following LEFT JOIN known_actors USING (actor_id) WHERE profile_id = ?1",
+        "FROM followers LEFT JOIN known_actors USING (actor_id) WHERE profile_id = ?1",
         [ profile_id ]
     );
 
     let context = context! { following };
-    println!("{}", context);
-    let body = req.render("profiles/_profile_id/following.html", context)?;
+    let body = req.render("profiles/_profile_id/followers.html", context)?;
     Ok(send(body))
 }

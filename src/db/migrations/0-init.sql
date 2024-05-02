@@ -13,21 +13,24 @@ CREATE TABLE posts (
   created_at TEXT NOT NULL DEFAULT (strftime('%FT%TZ', CURRENT_TIMESTAMP))
 ) STRICT;
 
-CREATE TABLE followers (
-  profile_id INTEGER NOT NULL REFERENCES profiles ON DELETE CASCADE ON UPDATE CASCADE,
-  following_actor TEXT NOT NULL
-) STRICT;
-
-CREATE TABLE followed_actors (
-  followed_actor_id INTEGER PRIMARY key,
-  profile_id INTEGER NOT NULL REFERENCES profiles ON DELETE CASCADE ON UPDATE CASCADE,
+CREATE TABLE known_actors (
+  actor_id TEXT PRIMARY KEY, -- note that this HAS to be a URL
   name TEXT NOT NULL,
   preferred_username TEXT NOT NULL,
-  host TEXT NOT NULL,
-  url TEXT NOT NULL UNIQUE,
+  url TEXT,
   inbox TEXT,
   outbox TEXT,
   summary TEXT
+) STRICT;
+
+CREATE TABLE followers (
+  profile_id INTEGER NOT NULL REFERENCES profiles ON DELETE CASCADE ON UPDATE CASCADE,
+  actor_id TEXT NOT NULL REFERENCES known_actors ON DELETE CASCADE ON UPDATE CASCADE
+) STRICT;
+
+CREATE TABLE following (
+  profile_id INTEGER NOT NULL REFERENCES profiles ON DELETE CASCADE ON UPDATE CASCADE,
+  actor_id TEXT NOT NULL REFERENCES known_actors ON DELETE CASCADE ON UPDATE CASCADE
 ) STRICT;
 
 CREATE TABLE globals (

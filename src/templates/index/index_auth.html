@@ -37,8 +37,15 @@
 
 <section class=card>
 <h1>{{ profile.display_name }}</h1>
-<div><a href="/profiles/{{ profile.profile_id }}">@{{ profile.preferred_username }}</a></div>
-Following: <a href="/profiles/{{ profile.profile_id }}/following">{{ follow_count }}</a>
+<div>
+  <a href="/profiles/{{ profile.profile_id }}">@{{ profile.preferred_username }}</a>
+</div>
+<div>
+  Following: <a href="/profiles/{{ profile.profile_id }}/following">{{ profile.following_count }}</a>
+</div>
+<div>
+  Followers: <a href="/profiles/{{ profile.profile_id }}/followers">{{ profile.follower_count }}</a>
+</div>
 </section>
 
 <section class="card newpost">

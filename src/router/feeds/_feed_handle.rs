@@ -20,11 +20,10 @@ pub async fn get(req: AuthedRequest<'_>) -> ServerResult {
         Some(actor) => actor,
     };
 
-    let outbox_uri = match &actor.outbox {
-        Some(s) => s.clone().parse::<Uri>(),
-        None => return Err(bad_gateway("No outbox provided")),
-    }
-    .map_err(|_| bad_gateway("Invalid outbox URI"))?;
+    let outbox_uri = actor.outbox
+        .clone()
+        .parse::<Uri>()
+        .map_err(|_| bad_gateway("Invalid outbox URI"))?;
     let outbox = get_outbox(&outbox_uri, &req.data.current_profile).await?;
 
     let first_page_url = match outbox.first {

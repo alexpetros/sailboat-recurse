@@ -1,7 +1,8 @@
 use minijinja::context;
+use rusqlite::named_params;
 
 use crate::queries::get_posts_in_profile;
-use crate::query_row;
+use crate::query_row_custom;
 use crate::server::server_request::{AuthedRequest, AuthStatus, PlainRequest, SetupStatus};
 use crate::server::server_response::{self, redirect, ServerResult};
 
@@ -25,22 +26,28 @@ pub fn get_unauthed(req: PlainRequest) -> ServerResult {
 pub async fn get_authed(req: AuthedRequest<'_>) -> ServerResult {
     let current_profile_id = req.data.current_profile.profile_id;
     let posts = get_posts_in_profile(&req.db, current_profile_id)?;
-    let follow_count: i64 = req.db.query_row(
-        "SELECT count(*) FROM followed_actors WHERE profile_id = ?1",
-        [current_profile_id],
-        |row| row.get(0)
-    )?;
 
-    let profile = query_row!(
+    let profile = query_row_custom!(
         req.db,
         Profile {
             profile_id: i64,
             preferred_username: String,
             display_name: String,
-            nickname: String
+            nickname: String,
+            following_count: i64,
+            follower_count: i64
         },
-        "FROM profiles where profile_id = ?1",
-        [current_profile_id]
+        "
+        SELECT
+            profile_id,
+            preferred_username,
+            display_name,
+            nickname,
+            (SELECT count(*) FROM following WHERE profile_id = :id) as following_count,
+            (SELECT count(*) FROM followers WHERE profile_id = :id) as follower_count
+        FROM profiles
+        where profile_id = :id",
+        named_params!{ ":id": current_profile_id }
     );
 
     let profile = match profile {
@@ -52,7 +59,6 @@ pub async fn get_authed(req: AuthedRequest<'_>) -> ServerResult {
         posts,
         profile,
         name => "Alex",
-        follow_count,
     };
 
     let body = req.render("index/index_auth.html", context)?;

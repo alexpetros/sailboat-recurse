@@ -7,11 +7,13 @@
     </div>
 
     <form action=/follow method=POST hx-post=/follow hx-swap=outerHTML>
+      <input name=id type=hidden value="{{ actor.id }}">
       <input name=url type=hidden value="{{ actor.url }}">
-      <input name=preferredUsername type=hidden value="{{ actor.preferredUsername }}">
+      <input name=preferred_username type=hidden value="{{ actor.preferred_username }}">
       <input name=name type=hidden value="{{ actor.name }}">
+      <input name=inbox type=hidden value="{{ actor.inbox }}">
+      <input name=outbox type=hidden value="{{ actor.outbox }}">
       <input name=summary type=hidden value="{{ actor.summary }}">
-      <input name=host type=hidden value="{{ actor.host }}">
       {% if actor.is_followed %}
       <button disabled>Followed</button>
       {% else %}
