@@ -97,6 +97,8 @@ fn serve_json_profile<Au: AuthState>(req: AnyRequest<'_, Au>, profile: Profile) 
     let id = format!("https://{}/profiles/{}", domain, profile.profile_id);
     let inbox = format!("https://{}/inbox", domain);
     let outbox = format!("https://{}/profiles/{}/outbox", domain, profile.profile_id);
+    let following = format!("https://{}/profiles/{}/following", domain, profile.profile_id);
+    let followers = format!("https://{}/profiles/{}/followers", domain, profile.profile_id);
     let public_key = PublicKey::new(&id, &profile.private_key_pem);
 
     let context = vec![Context::ActivityStreams, Context::SecurityV1];
@@ -111,6 +113,8 @@ fn serve_json_profile<Au: AuthState>(req: AnyRequest<'_, Au>, profile: Profile) 
         icon: None,
         inbox,
         outbox,
+        followers: Some(followers),
+        following: Some(following),
         public_key,
     };
 

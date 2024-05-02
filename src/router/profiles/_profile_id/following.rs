@@ -14,7 +14,6 @@ pub async fn get(req: AuthedRequest<'_>) -> ServerResult {
     );
 
     let context = context! { following };
-    println!("{}", context);
     let body = req.render("profiles/_profile_id/following.html", context)?;
     Ok(send(body))
 }

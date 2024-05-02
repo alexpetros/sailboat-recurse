@@ -1,4 +1,4 @@
-use crate::activitypub::objects::note::get_post;
+use crate::activitypub::objects::note::{get_post, Note};
 use crate::query_row_custom;
 use crate::server::server_request::{AnyRequest, AuthState};
 use crate::server::server_response::{send, ServerResult};
@@ -47,8 +47,8 @@ fn get_html<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
 
 fn get_json<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
     let post_id = req.get_url_param(2, "Missing post ID")?;
-    let post = get_post(&req.db, post_id, &req.domain)?;
-    let body = json!(post).to_string();
+    let note: Note = get_post(&req.db, post_id, &req.domain)?.into();
+    let body = json!(note).to_string();
     Ok(send(body))
 }
 

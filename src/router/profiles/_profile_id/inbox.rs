@@ -1,4 +1,5 @@
 use hyper::{StatusCode, Uri};
+use rand::random;
 use serde::Deserialize;
 use serde_json::json;
 use tracing::warn;
@@ -57,8 +58,8 @@ async fn follow<Au: AuthState>(req: ServerRequest<'_, String, Au>, follow_activi
     let accept = AcceptActivity {
         context: AtContext::Context(Context::ActivityStreams),
         activity_type: ActivityType::Accept,
-        id: "1223234932098".to_owned(), // TODO generate these
-        actor: format!("{}/profiles/{}", req.domain, profile_id),
+        id: format!("https://{}/activity/{}", req.domain, random::<u64>()),
+        actor: format!("https://{}/profiles/{}", req.domain, profile_id),
         object: follow_activity
     };
 

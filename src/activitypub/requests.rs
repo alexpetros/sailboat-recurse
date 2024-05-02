@@ -40,7 +40,6 @@ fn build_activitypub_request(
 
     let signature;
     if let Some(body) = body {
-        println!("{}", body);
         let vec = openssl::sha::sha256(body.as_bytes());
         let digest = base64::encode_block(&vec);
         let digest = format!("sha-256={}", digest);

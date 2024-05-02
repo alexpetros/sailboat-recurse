@@ -174,7 +174,7 @@ fn require_authentication(req: PlainRequest) -> MiddlewareResult<SetupRequest> {
 }
 
 fn log_warn_and_send_specific_message(err: ServerError) -> ServerResult {
-    warn!("{}", err);
+    warn!("Returning {} with error: {}", err.status_code, err);
     server_response::send_status_and_message(err)
 }
 

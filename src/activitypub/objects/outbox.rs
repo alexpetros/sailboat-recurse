@@ -1,6 +1,6 @@
-use crate::{activitypub::PUBLIC_STREAM, query_map, query_row_custom, server::server_response::InternalResult};
+use crate::{activitypub::PUBLIC_STREAM, query_row_custom, server::server_response::InternalResult};
 
-use super::{note::Note, AtContext, Context};
+use super::{note::{Note, Post}, AtContext, Context};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -98,13 +98,34 @@ pub struct CreateActivity {
     #[serde(rename = "type")]
     pub activity_type: ActivityType,
     pub id: String,
-    pub actor: Option<String>,
+    pub actor: String,
     pub published: Option<String>,
     #[serde(default)]
     pub to: Vec<String>,
     #[serde(default)]
     pub cc: Vec<String>,
     pub object: Object,
+}
+
+impl From<Note> for CreateActivity {
+    fn from(note: Note) -> Self {
+        CreateActivity {
+            context: Some(AtContext::Context(Context::ActivityStreams)),
+            activity_type: ActivityType::Create,
+            id: note.url.to_owned(),
+            actor: note.attributed_to.to_owned(),
+            published: note.published.to_owned(),
+            to: vec![PUBLIC_STREAM.to_owned()],
+            cc: vec![format!("{}/followers", note.attributed_to)],
+            object: Object::Note(note)
+        }
+    }
+}
+
+impl Note {
+    pub fn into_create(self: Note) -> CreateActivity {
+        self.into()
+    }
 }
 
 // https://www.w3.org/TR/activitystreams-vocabulary/#object-types
@@ -145,48 +166,27 @@ pub fn get_outbox(db: &Connection, profile_id: i64, domain: &str) -> InternalRes
 }
 
 pub fn get_outbox_page(db: &Connection, profile_id: i64, domain: &str, _page_num: usize) -> InternalResult<OutboxPage> {
-    let posts = query_map!(
-        db,
-        Post {
-            post_id: i64,
-            profile_id: i64,
-            created_at: String,
-            content: String
-        },
-        "FROM posts WHERE profile_id = ?1",
-        [ profile_id ]);
+    let posts = db.query_row(
+        "SELECT post_id, profile_id, content, created_at FROM posts WHERE profile_id = ?1",
+        [ profile_id ],
+        |row| {
+            let post_id = row.get(0)?;
+            let profile_id: i64 = row.get(1)?;
+            let post = Post {
+                post_id,
+                content: row.get(2)?,
+                created_at: row.get(3)?,
+                url: format!("{}/posts/{}", domain, post_id),
+                actor_id: format!("{}/profiles/{}", domain, profile_id)
+            };
+            Ok(post)
+        });
 
     let page_url = format!("{}/profiles/{}/outbox?page=1", domain, profile_id);
-
-    let items = posts.into_iter().map(|post| {
-        let post_url = format!("{}/posts/{}", domain, post.post_id);
-        let to_field = vec![PUBLIC_STREAM.to_owned()];
-        let cc_field = vec![];
-
-        let note = Note {
-            id: page_url.to_owned(),
-            _type: super::note::NoteType::Note,
-            url: post_url.to_owned(),
-            summary: None,
-            published: Some(post.created_at.to_owned()),
-            attributed_to: Some(post_url.to_owned()),
-            to: to_field.clone(),
-            cc: cc_field.clone(),
-            sensitive: false,
-            content: post.content,
-            tag: vec![]
-        };
-        CreateActivity {
-            context: Some(AtContext::Context(Context::ActivityStreams)),
-            activity_type: ActivityType::Create,
-            id: page_url.to_owned(),
-            actor: Some(page_url.to_owned()),
-            published: Some(post.created_at.to_owned()),
-            to:to_field.clone(),
-            cc: cc_field.clone(),
-            object: Object::Note(note)
-        }
-    }).collect();
+    let items: Vec<CreateActivity>  = posts.into_iter()
+        .map(|post| { post.into_note() })
+        .map(|note| { note.into_create() })
+        .collect();
 
 
     let page = OrderedCollectionPage {
