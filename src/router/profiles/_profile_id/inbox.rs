@@ -33,11 +33,7 @@ async fn follow<Au: AuthState>(req: ServerRequest<'_, String, Au>, follow_activi
     })?;
 
 
-    let actor = requests::get_actor(&actor_uri, &profile).await
-        .map_err(|_| {
-            let message = format!("Unable to retrieve parse valid actor from URI {}", actor_uri);
-            bad_gateway(&message)
-        })?;
+    let actor = requests::get_actor(&actor_uri, &profile).await?;
 
     let inbox_uri = actor.inbox.parse::<Uri>()
         .map_err(|_| {
