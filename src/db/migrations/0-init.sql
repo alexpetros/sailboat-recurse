@@ -20,7 +20,8 @@ CREATE TABLE known_actors (
   url TEXT,
   inbox TEXT,
   outbox TEXT,
-  summary TEXT
+  summary TEXT,
+  icon_url TEXT
 ) STRICT;
 
 CREATE TABLE followers (

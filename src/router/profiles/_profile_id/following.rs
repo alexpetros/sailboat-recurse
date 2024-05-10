@@ -8,7 +8,7 @@ pub async fn get(req: AuthedRequest<'_>) -> ServerResult {
     let profile_id = req.get_url_param(2, "Invalid Profile ID")?;
     let following = query_map!(
         req.db,
-        Actor { url: String, name: String, preferred_username: String },
+        Actor { url: String, name: String, preferred_username: String, icon_url: Option<String> },
         "FROM following LEFT JOIN known_actors USING (actor_id) WHERE profile_id = ?1",
         [ profile_id ]
     );

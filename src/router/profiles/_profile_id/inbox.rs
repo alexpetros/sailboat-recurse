@@ -41,10 +41,14 @@ async fn follow<Au: AuthState>(req: ServerRequest<'_, String, Au>, follow_activi
             bad_gateway(&message)
         })?;
 
+    let icon_url = actor.icon.map(|i| { i.url });
     req.db.execute(
-        "INSERT OR REPLACE INTO known_actors (actor_id, name, preferred_username, url, inbox, outbox)
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        (actor.id, &actor.name, &actor.preferred_username, &actor.url, &actor.inbox, &actor.outbox),
+        "INSERT OR REPLACE INTO known_actors
+            (actor_id, name, preferred_username, url, inbox, outbox, icon_url)
+        VALUES
+            (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        (actor.id, &actor.name, &actor.preferred_username, &actor.url, &actor.inbox, &actor.outbox,
+         icon_url),
     )?;
 
     req.db.execute(

@@ -1,4 +1,4 @@
-use crate::activitypub::objects::actor::{Actor, ActorType, PublicKey};
+use crate::activitypub::objects::actor::{Actor, ActorType, Icon, PublicKey};
 use crate::activitypub::objects::Context;
 use crate::queries::get_posts_in_profile;
 use crate::server::error::bad_request;
@@ -95,6 +95,12 @@ fn serve_json_profile<Au: AuthState>(req: AnyRequest<'_, Au>, profile: Profile) 
     //     )?.domain;
 
     let id = format!("https://{}/profiles/{}", domain, profile.profile_id);
+    let icon = Icon {
+        icon_type: "Image".to_owned(),
+        media_type: "image/jpeg".to_owned(),
+        url: format!("https://{}/static/images/pineapple.svg", domain)
+    };
+
     let inbox = format!("https://{}/inbox", domain);
     let outbox = format!("https://{}/profiles/{}/outbox", domain, profile.profile_id);
     let following = format!("https://{}/profiles/{}/following", domain, profile.profile_id);
@@ -110,7 +116,7 @@ fn serve_json_profile<Au: AuthState>(req: AnyRequest<'_, Au>, profile: Profile) 
         actor_type: ActorType::Person,
         summary: Some("We can't rewind, we've gone too far".to_owned()),
         preferred_username: profile.preferred_username,
-        icon: None,
+        icon: Some(icon),
         inbox,
         outbox,
         followers: Some(followers),
