@@ -7,4 +7,5 @@ pub struct Post {
     pub created_at: String,
     pub actor_name: String,
     pub actor_handle: String,
+    pub is_owner: bool
 }

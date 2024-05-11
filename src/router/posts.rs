@@ -48,6 +48,7 @@ pub async fn post(req: AuthedRequest<'_>) -> ServerResult {
                 created_at: row.get(2)?,
                 actor_name: row.get(3)?,
                 actor_handle: row.get(4)?,
+                is_owner: true
             };
             Ok(post)
         },

@@ -23,5 +23,9 @@ pub fn load_static() -> HashMap<String, Vec<u8>> {
         String::from("vendor/htmx-1.9.10.js"),
         include_bytes!("./static/vendor/htmx-1.9.10.js").to_vec(),
     );
+    static_files.insert(
+        String::from("resources/gardening-photo.jpg"),
+        include_bytes!("./static/resources/gardening-photo.jpg").to_vec(),
+    );
     static_files
 }

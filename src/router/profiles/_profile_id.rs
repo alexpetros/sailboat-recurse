@@ -66,7 +66,7 @@ pub async fn get<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
 
     let profile = match profile {
         Ok(x) => x,
-        Err(_) => return not_found(req)
+        Err(_) => return not_found(&req)
     };
 
     match req.is_ap_req() {
@@ -77,7 +77,7 @@ pub async fn get<Au: AuthState>(req: AnyRequest<'_, Au>) -> ServerResult {
 
 async fn serve_html_profile<Au: AuthState>(req: AnyRequest<'_, Au>, profile: Profile) -> ServerResult {
     // let domain = req.domain;
-    let posts = get_posts_in_profile(&req.db, profile.profile_id)?;
+    let posts = get_posts_in_profile(&req.db, profile.profile_id, false)?;
 
     let context = context! { profile => profile, posts => posts };
 

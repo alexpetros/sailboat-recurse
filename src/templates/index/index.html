@@ -1,12 +1,12 @@
-{% extends 'base.html' %}
+<!DOCTYPE HTML>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/static/common.css">
 
-{% block head %}
-<title>Sailboat</title>
-{% endblock %}
-
-{% block main %}
-<h1>Sailboat Home</h1>
-<section>
-  Login here: <a href="/login">Login</a>
-</section>
-{% endblock %}
+<div class=button-header>
+  <h2>My Tweets</h2>
+  <button>Follow!</button>
+</div>
+{% for post in posts %}
+  {%- include '_partials/post.html' %}
+{% endfor %}

@@ -62,7 +62,7 @@ macro_rules! routes {
                     $handler(req).await
                 }
             )*
-            _ => server_response::not_found($req),
+            _ => server_response::not_found(&$req),
         }
     };
 }

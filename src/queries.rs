@@ -10,7 +10,7 @@ use hyper::Uri;
 use rusqlite::Connection;
 use tracing::warn;
 
-pub fn get_posts_in_profile(db: &Connection, profile_id: i64) -> Result<Vec<Post>, ServerError> {
+pub fn get_posts_in_profile(db: &Connection, profile_id: i64, is_owner: bool) -> Result<Vec<Post>, ServerError> {
     let mut query = db.prepare(
         "SELECT post_id,
             display_name as actor_name,
@@ -31,6 +31,7 @@ pub fn get_posts_in_profile(db: &Connection, profile_id: i64) -> Result<Vec<Post
             actor_handle: row.get(2)?,
             content: row.get(3)?,
             created_at: row.get(4)?,
+            is_owner,
         };
         Ok(post)
     })?;

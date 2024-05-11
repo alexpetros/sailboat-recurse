@@ -19,13 +19,15 @@ pub async fn get(req: PlainRequest<'_>) -> ServerResult {
 }
 
 pub fn get_unauthed(req: PlainRequest) -> ServerResult {
-    let body = req.render("index/index.html", context! {})?;
+    // TODO THIS IS OBVIOUSLY NOT HOW IT SHOULD WORK
+    let posts = get_posts_in_profile(&req.db, 1, false)?;
+    let body = req.render("index/index.html", context! { posts })?;
     Ok(server_response::send(body))
 }
 
 pub async fn get_authed(req: AuthedRequest<'_>) -> ServerResult {
     let current_profile_id = req.data.current_profile.profile_id;
-    let posts = get_posts_in_profile(&req.db, current_profile_id)?;
+    let posts = get_posts_in_profile(&req.db, current_profile_id, true)?;
 
     let profile = query_row_custom!(
         req.db,

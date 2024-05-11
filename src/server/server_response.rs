@@ -49,12 +49,13 @@ pub fn send_status(status: StatusCode) -> ServerResult {
 }
 
 pub fn send_status_and_message(error: ServerError) -> ServerResult {
+    // TODO send status code as text when empty
     let mut res = Response::new(full(error.message));
     *res.status_mut() = error.status_code;
     Ok(res)
 }
 
-pub fn not_found<Au: AuthState>(req: AnyRequest<Au>) -> ServerResult {
+pub fn not_found<Au: AuthState>(req: &AnyRequest<Au>) -> ServerResult {
     let page = req.render("404.html", context! {})?;
     let mut res = send(page);
     *res.status_mut() = StatusCode::NOT_FOUND;
